@@ -1,0 +1,2 @@
+checkpoint=/data/artifacts/minimind-lab/S10-ifeval-curriculum-v4-20260907/checkpoints/s08_best_val_768.pth
+sha256=46aeab66795795aa77d703f08d71b952fe98461040f4560e1301021540710131

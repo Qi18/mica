@@ -1,0 +1,22 @@
+{
+  "status": "completed-with-bf16-consistency-limitations",
+  "started_at": "2026-09-14T08:22:43Z",
+  "lab_commit": "e533aaf040656f567e45f2c2cfc645be9e4b85df",
+  "minimind_source_commit": "393e387e9ad99f0f04c296e4c5e7353f4444629f",
+  "source_sha256": "ad98639db128d63f5591b80cc94ec8f7663c647f3fd6bef0efefd4a09621918f",
+  "script_sha256": "cc154be76e5f44c2e21f22aefb30e01d2921b1cc48e9aa87adc2ebcfe6e6b325",
+  "torch": "2.6.0+cu124",
+  "transformers": "4.51.1",
+  "python": "3.10.12",
+  "hostname": "a10-server-20260914",
+  "hardware": "0, GPU-3ec87d3a-8694-faeb-a92d-0cc955013471, NVIDIA A10, 3 MiB, 0 %, 32, 210 MHz, 22.68 W\n1, GPU-9a48f67f-6744-a196-8029-58ff445d157d, NVIDIA A10, 0 MiB, 0 %, 31, 210 MHz, 21.00 W\n2, GPU-ac7a6204-4632-b689-7e45-ca2395b12c8f, NVIDIA A10, 0 MiB, 0 %, 31, 210 MHz, 21.49 W\n3, GPU-caad9900-91c7-713b-f630-a7981cdf70ab, NVIDIA A10, 0 MiB, 0 %, 33, 210 MHz, 21.10 W",
+  "cuda_visible_devices": "0",
+  "checkpoint_sha256": "46aeab66795795aa77d703f08d71b952fe98461040f4560e1301021540710131",
+  "swanlab_url": null,
+  "minimind_dirty": false,
+  "dirty_worktree": "pre-existing changes recorded in source.patch and status-before.txt",
+  "command": "scripts/eval/benchmark_kvcache_gqa.py --out experiments/08-inference/I01-I04-a10-20260914 --mode full",
+  "finished_at": "2026-09-14T08:50:32Z",
+  "scenarios": 40,
+  "checkpoint_sha256_after": "46aeab66795795aa77d703f08d71b952fe98461040f4560e1301021540710131"
+}

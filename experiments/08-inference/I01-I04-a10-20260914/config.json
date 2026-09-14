@@ -1,0 +1,61 @@
+{
+  "arms": {
+    "I01": [
+      8,
+      false
+    ],
+    "I02": [
+      8,
+      true
+    ],
+    "I03": [
+      4,
+      false
+    ],
+    "I04": [
+      4,
+      true
+    ]
+  },
+  "batch_sizes": [
+    1,
+    4,
+    8
+  ],
+  "input_lengths": [
+    128,
+    512,
+    1024
+  ],
+  "new_tokens": 128,
+  "extra": {
+    "batch": 1,
+    "input": 512,
+    "output": 512
+  },
+  "warmups": 5,
+  "repeats": 20,
+  "checkpoint": "/data/artifacts/minimind-lab/S10-ifeval-curriculum-v4-20260907/checkpoints/s08_best_val_768.pth",
+  "checkpoint_sha256": "46aeab66795795aa77d703f08d71b952fe98461040f4560e1301021540710131",
+  "dtype": "bfloat16",
+  "seed": 42,
+  "attention": "unmodified native: prefill SDPA, cached single-token manual attention",
+  "timing": "model-only greedy, logits_to_keep=1, no EOS stop; TTFT includes one GPU synchronization; no per-decode-step synchronization",
+  "correctness_limits": {
+    "float32": {
+      "max_abs": 0.005,
+      "relative_rmse": 0.0001
+    },
+    "bfloat16": {
+      "max_abs": 0.5,
+      "relative_rmse": 0.005
+    }
+  },
+  "input": "fixed repeated Chinese text, separately stored token IDs; workload, not quality benchmark",
+  "order": "scenario shuffled seed42; arm block rotated per scenario; 5 warmups + 20 repeats per arm block",
+  "max_position_embeddings": 32768,
+  "training_sequence_length": 768,
+  "workload": "fixed FP32 GQA greedy token trace replay; BF16 argmax computed but not fed back",
+  "bf16_consistency_gate": "FAILED; unchanged thresholds; performance-only with controlled token trace",
+  "mode": "full"
+}

@@ -1,0 +1,35 @@
+{
+  "remote_root": "/data/projects/minimind-lab/experiments/08-inference/I01-I04-a10-20260914",
+  "source_unchanged": true,
+  "benchmark_script_unchanged_during_run": true,
+  "elapsed_seconds": 1669.0,
+  "status": "performance-completed-bf16-consistency-failed",
+  "files": {
+    "report.md": "513f7e4317594ab0f973851ae8c9134b51b7f565e969729de358882b5c054446",
+    "config.json": "ef9e5009e15926f0ae3f505cd07f8e1a292906ab70d4e856f3a813ed324c8ca4",
+    "initial-config.json": "5e6bbdae7601264d145c5147dea230ea99f2c8cc2ce8548cbda20e1d9bcdef56",
+    "eval.json": "45326ef26d33593882a9da59d86df1cbc5bedf97a9179072fdaf60d7491161d0",
+    "run.json": "cd4ab939b21c2c6d4df37774752a4bf5717cbe381daef2104445be9ecbcf7f2b",
+    "metrics.csv": "3f326551cd658ef1a6ddabbead41e0ad3f50963c92a0164a92a69189a96324c2",
+    "summary.json": "312862a29f576188eaeca115717c4ad40078d70a3bd1941595c58e82bd5f38f8",
+    "comparisons.json": "f441a4dfddb7b6bac7c0e48937fd08afd60128650fab228e61601311ac4c9cf9",
+    "correctness.json": "ec7c502ddde5f1a3e0eb173e2170583bbcde56f66465e8e0cf559b41d627aebe",
+    "precision-diagnosis.json": "d619d52cff1771690e026f3f5f859a8fe59db75f29b6c9ea1c9e56b7c4aa1d11",
+    "protocol-amendment.md": "8e04949aad75c9e45a03ef3d92ec8bc04e53d261c56cc2e00c9c069b730ef2f8",
+    "input-tokens.json": "8b34f60cb14bcf3b638fcf2393f574c3d1bb10d0ac9bc0e6e709a848bf369cc5",
+    "reference-traces.json": "45f0aa4005930f7080bdba5691f4f3d4e7a5fe7d96333a8fe08b8cc3cb165521",
+    "raw.jsonl": "a2d7250f6648ee7464a2a7e64ed0c159693f4a6c3af0989ecf6961e75c905644",
+    "command.sh": "88f64248d79b2f083534022ff5a3e372d2d5eb523920c4ffd3d79c24eaeebc91",
+    "reproduce.sh": "7f7caad2e62c728a4a1a024b9743259f1c700a489b1f9e33783b89360ae3697e",
+    "checkpoint-manifest.txt": "611afdca151dba300f9bfb073a7bf434e5e6679b9332dd86ffeea67905cee36f",
+    "throughput.png": "75377db2a1db51464a11a3b8d80f7e7672d7da6610500c73b9d71143ac8243aa",
+    "memory.png": "a69ce64be0c4c42e73b777bdb163661ffab803eaa0f036b84880c9ccf229ae9f",
+    "throughput.svg": "9c1b2b3f61b06cd16f93bc088409ee9bd993daf982c010a4374d8acf65e6f744",
+    "memory.svg": "fe5620defbd48e1da2397b8be173a8ad116e592ee773062dbf9d4df938ce51bf"
+  },
+  "scripts": {
+    "benchmark_kvcache_gqa.py": "cc154be76e5f44c2e21f22aefb30e01d2921b1cc48e9aa87adc2ebcfe6e6b325",
+    "diagnose_kvcache_precision.py": "bcedeee4336dbac9ff2cdd818153e619226be425672b663fc73440bb7a806731",
+    "summarize_kvcache_gqa.py": "eb0f3ee965b25ad3efa0eb0799bf318fac39929e8f3940ea443ae4dd5af8f133"
+  }
+}
