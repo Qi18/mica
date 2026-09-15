@@ -12,12 +12,21 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 EXPECTED_GPU_COUNT = int(os.environ.get("EXPECTED_GPU_COUNT", "8"))
 MIN_SHM_BYTES = int(os.environ.get("MIN_SHM_BYTES", str(800 * 1024**3)))
 REQUIRE_SWANLAB = os.environ.get("REQUIRE_SWANLAB", "1") == "1"
-MINIMIND_PYTHON = Path(
-    os.environ.get("MINIMIND_PYTHON", "/data/venvs/minimind-lab/bin/python")
-)
-SWANLAB_BIN = Path(
-    os.environ.get("SWANLAB_BIN", "/data/venvs/minimind-lab/bin/swanlab")
-)
+
+
+def discover_executable(environment_name: str, preferred: str, fallback: str) -> Path:
+    configured = os.environ.get(environment_name)
+    if configured:
+        return Path(configured)
+    preferred_path = Path(preferred)
+    if preferred_path.is_file():
+        return preferred_path
+    resolved = shutil.which(fallback)
+    return Path(resolved) if resolved else preferred_path
+
+
+MINIMIND_PYTHON = discover_executable("MINIMIND_PYTHON", "/data/venvs/minimind-lab/bin/python", "python3")
+SWANLAB_BIN = discover_executable("SWANLAB_BIN", "/data/venvs/minimind-lab/bin/swanlab", "swanlab")
 
 
 def fail(message: str) -> None:
