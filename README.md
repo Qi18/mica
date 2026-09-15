@@ -28,14 +28,14 @@ CPU 示例使用微型模型与合成 token，只验证训练/保存/加载链�
 |---|---|
 | Dense / MoE 模型 | MicaConfig、MicaForCausalLM，独立实现 |
 | 文本预训练与单轮 SFT 数据 | mica data，支持 prompt mask |
-| 单设备 FP32 训练 | mica train，JSON recipe |
-| 续训 | --resume 恢复 optimizer、RNG、step，校验数据与配置 |
+| FP32 单设备 / DDP 训练 | mica train，JSON recipe，梯度累积 |
+| 定期保存与续训 | save_every、SIGTERM/SIGINT 保存，--resume 恢复各 rank RNG |
 | 语言建模评测 | mica evaluate，按有效 token 加权 NLL/PPL |
 | 旧权重迁移 | mica import-legacy，严格校验参数键与形状 |
 | 文本生成 | mica generate，贪心解码 |
 | 基础 HTTP 服务 | mica serve，非流式 /v1/chat/completions |
 
-DDP、LoRA、DPO、GRPO/CISPO、Agentic RL、SwanLab 和完整 benchmark 已有历史实现，尚未全部迁入 Mica CLI。新入口当前将数据载入内存，checkpoint 在训练命令结束时保存。后续接入顺序见 [Roadmap](docs/mica-roadmap.md)。
+数据准备按行处理，训练使用紧凑偏移索引和按需解码；checkpoint 定期保存并在 optimizer update 边界处理中断。双进程 CPU DDP 已验证，CUDA 多卡尚待验收。用法见 [训练与恢复](docs/mica-training.md)。LoRA、DPO、GRPO/CISPO、Agentic RL、SwanLab 和完整 benchmark 尚待迁入，见 [Roadmap](docs/mica-roadmap.md)。
 
 ## 数据与训练
 

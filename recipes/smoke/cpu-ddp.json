@@ -1,0 +1,20 @@
+{
+  "model": {
+    "hidden_size": 32,
+    "num_hidden_layers": 2,
+    "num_attention_heads": 4,
+    "num_key_value_heads": 2,
+    "vocab_size": 64,
+    "intermediate_size": 64,
+    "max_position_embeddings": 128
+  },
+  "data": "../../examples/tokens.jsonl",
+  "device": "cpu",
+  "steps": 4,
+  "batch_size": 1,
+  "gradient_accumulation_steps": 2,
+  "save_every": 2,
+  "cpu_threads": 1,
+  "seed": 42,
+  "learning_rate": 0.001
+}

@@ -1,6 +1,7 @@
 """Mica command line interface."""
 import argparse
 import json
+import os
 import torch
 from . import __version__
 from .runtime import train, evaluate, import_legacy, load_model
@@ -66,4 +67,7 @@ def main():
         from .inference import serve
         serve(**args)
         return
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    if int(os.environ.get("RANK", 0)) == 0:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    if result.get("status") == "interrupted":
+        raise SystemExit(130)
