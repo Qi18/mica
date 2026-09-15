@@ -2,7 +2,7 @@
 
 ## 1. 项目背景与目标
 
-待填写。
+本项目基于 MiniMind 的固定源码快照，目标是在可承担的 64M 模型规模上完整实践 LLM 数据、预训练、监督微调、偏好优化、可验证强化学习、Agentic RL、MoE、蒸馏与推理优化。与“跑通脚本”不同，本项目把实验协议、失败门槛、通用能力回归和结论边界一并纳入交付，所有公开结论都要求能够回到配置、命令、源码 commit 和评测产物。
 
 ## 2. 环境与数据
 
@@ -30,11 +30,15 @@ P02 的 8,468,827 行并不等价于 3.66 倍有效训练数据：其有效 targ
 
 ## 3. 模型结构
 
-待填写参数量、关键模块、Dense/MoE 边界和源码证据。
+主线 Dense 模型为 63,912,192 参数：词表 6,400，hidden size 768，8 层 Transformer，8 个 query heads、4 个 KV heads，Embedding 与 LM Head 权重共享。Block 采用 Pre-Norm RMSNorm、RoPE、GQA Attention、SwiGLU FFN 与残差连接；训练使用 shifted next-token cross entropy。
+
+MoE 对照保留相同 Attention，将每层 Dense FFN 替换为 4 experts、top-1 routing 和 load-balancing auxiliary loss。MoE 总参数 198,416,640，每 token 名义激活参数 63,936,768；“激活参数接近”不等于端到端 FLOPs 或运行成本相同。源码路径、张量 shape、参数拆解与结构探针见 [模型结构阅读笔记](source_reading/02-model-architecture.md)。
 
 ## 4. 训练方案
 
-待填写 Pretrain、SFT/LoRA、DPO、GRPO/CISPO 和 Agentic RL。
+训练主线从同一个 P03 Base 与 S10 Full SFT release 分叉，避免将多个后训练阶段串联后无法归因。Pretrain 比较官方 full 数据与 tokenizer 对齐、去重、带独立 validation 的 v1 数据管线；SFT 通过固定 Chat/格式/重复/Tool 行为门和完整 IFEval 选择 S10。
+
+LoRA、DPO、GRPO/CISPO 与 Agentic RL 均设置未训练或 SFT control，并同时检查目标指标和七项通用 benchmark、IFEval、Chat/Tool 回归。Dense/MoE 使用同数据与 token 预算；蒸馏固定学生初始化和训练预算；推理实验以 KV Cache 开关和等价 MHA/GQA 组成四臂。每个阶段的冻结协议、命令和实际偏差见 [实验计划](experiment_plan.md)与[阶段报告索引](phases/README.md)。
 
 ## 5. 对照实验
 
@@ -103,7 +107,15 @@ S10 相对 S09 的 IFEval prompt strict 提升 6.29pp（60/541 → 94/541），i
 
 ## 7. 失败实验与问题排查
 
-待填写失败现象、根因、证据和改进。
+| 现象 | 根因或证据 | 处理与边界 |
+|---|---|---|
+| P02 行数更多、training loss 更低，但共享 validation 更差 | 固定长度逐行 padding 使 target 利用率仅 31.07%，并检出 exact duplicate 与 benchmark containment | 用 tokenizer 对齐切块、来源 sidecar、去重和独立 validation 建立 P03；收益归因于整套数据管线 |
+| DPO 离线 preference credit 提升，盲评未胜出 | 离线偏好目标与自由生成质量不等价；FP16 保存还会抹除微小更新 | 改为 FP32 保存并恢复正式权重，同时以盲评和通用回归否决“质量提升”结论 |
+| GRPO/CISPO test 指标看似提升 | 模板与答案位置联合混杂，模型塌缩为位置策略，pass@4 明显回退 | 作废 v1、增加联合单元审计并重跑；最终 completed-not-promoted |
+| Agentic RL 专项目标提高但旧 Tool 回退 | 单 seed 合成同族任务收益没有跨到旧工具集 | 保留专项结果和置信区间，不替换 S10 |
+| BF16 KV Cache 自由生成不完全等价 | 缓存/完整序列矩阵形状变化带来数值舍入差异，未完成逐算子唯一归因 | 主测速改用 FP32 固定轨迹；单独公开 BF16 一致性失败，不放宽阈值 |
+
+完整失败尝试、修复记录和未验证边界保留在各阶段报告，未被成功结果覆盖。
 
 ## 8. 核心结论
 
@@ -116,7 +128,11 @@ S10 相对 S09 的 IFEval prompt strict 提升 6.29pp（60/541 → 94/541），i
 
 ## 9. 发布资产
 
-待填写 GitHub commit、SwanLab、Hugging Face、博客和复现命令。
+- GitHub：本仓库 [Qi18/minimind-lab](https://github.com/Qi18/minimind-lab) 保存源码、配置、命令、指标摘要、评测结果与报告；权重、数据集、优化器状态和完整日志不进入 Git。
+- SwanLab：公开 run 链接汇总见 [SwanLab 运行索引](phases/swanlab-runs.md)，用于训练曲线、系统指标和实验对比。
+- Hugging Face：当前没有已发布且通过门槛的权重资产；S10 release 仍仅在 L20/CPFS 保留，因此不提供虚构下载链接。
+- 博客：草稿保留在 `blog/drafts/`，尚未作为已发布成果声明。
+- 复现：先运行 `python3 scripts/check_repository.py` 和 Python compile 检查，再按目标实验目录的 `command.sh`、`config.json`、`run.json` 执行；环境与产物边界见 [仓库管理方式](repository-management.md)。
 
 ## 10. 简历项目描述
 
