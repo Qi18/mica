@@ -43,6 +43,9 @@ experiments/**/pretrain_pilot_*.pid
 experiments/**/pretrain_v1_*.log
 experiments/**/pretrain_v1_*.pid
 experiments/**/eval/.steps/
+experiments/**/pilot-*
+experiments/**/source.patch
+experiments/**/status-before.txt
 *.log
 *.pid
 *.lock

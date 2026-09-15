@@ -1,8 +1,43 @@
 # MiniMind Lab
 
-MiniMind Lab 是一个围绕 64M 级小语言模型展开的可复现实验项目，覆盖数据与 Tokenizer、模型结构、预训练、SFT/LoRA、DPO、GRPO/CISPO、Agentic RL、统一评测和推理服务。
+> 基于开源 [MiniMind](https://github.com/jingyaogong/minimind) 的个人大模型训练与评测实验室。不是 MiniMind 官方仓库。
+
+MiniMind Lab 是一个围绕 64M 级小语言模型展开的可复现实验项目，覆盖数据与 Tokenizer、模型结构、预训练、SFT/LoRA、DPO、GRPO/CISPO、Agentic RL、统一评测和推理优化。项目重点不是复刻一次训练，而是用统一协议回答：一次看似有效的训练改动，是否真的提升了目标能力，又是否损伤了通用能力。
 
 本仓库保存实验配置、结果、源码阅读笔记和报告；模型源码通过 Git Subtree 导入 [`minimind/`](minimind/)，当前基线固定到上游 commit `393e387`。
+
+## 我完成的工作
+
+- 建立从环境门禁、数据审计、训练、统一评测到归档的实验工程，并为每次运行记录源码、数据、命令、硬件、权重摘要和 SwanLab 链接。
+- 在 8×NVIDIA L20 上完成 64M Dense 模型的 Pretrain、Full SFT、LoRA、DPO、GRPO/CISPO、Agentic RL 与 Dense/MoE 对照。
+- 用 held-out、配对 bootstrap、行为门和通用回归识别“训练指标上涨但能力没有提升”的负结果，包括答案位置 reward hacking、灾难性遗忘和离线偏好目标错位。
+- 实现并测量 KV Cache / GQA 四臂推理实验，保留 FP32/BF16 数值一致性边界、吞吐、显存和原始测量证据。
+- 将上游 MiniMind 作为固定来源快照维护；个人实验逻辑、配置、评测脚本与报告均在本仓库演进。
+
+## 代表性结论
+
+| 主题 | 结果 | 结论边界 |
+|---|---|---|
+| Pretrain 数据工程 | P03 仅用 P02 约 63% 的有效 targets，将共享 validation NLL 从 3.191 降至 2.604，训练 wall 缩短 83.8% | 是整套数据管线收益，不能归因于单一数据源 |
+| SFT | S10 的 IFEval prompt strict 为 17.38%，相对 S09 +6.29pp，七项 macro 基本稳定 | 提升集中在可验证指令，不能外推为开放域 Chat 全面提升 |
+| DPO / RL | DPO 离线 preference credit 提升，但盲评未胜出；GRPO/CISPO 暴露答案位置策略与 pass@4 回退 | 均按 completed-not-promoted 收口，S10 保持 release |
+| Dense / MoE | MoE 七项 macro +0.56pp，但配对区间跨 0，训练循环慢约 40% | 单 seed 下没有明确综合优势 |
+| KV Cache / GQA | A10 上 cache decode 为 0.82–6.23×；GQA 将 KV 字节精确减半，但 cache-on 吞吐略低于等价 MHA | 仅适用于当前小模型和原生实现，不代表融合推理框架 |
+
+详细数字、协议与失败分析见[最终实验报告](docs/final_report.md)和[阶段报告索引](docs/phases/README.md)。
+
+## 快速开始
+
+```bash
+git clone https://github.com/Qi18/minimind-lab.git
+cd minimind-lab
+
+# 不需要 GPU：检查公开仓边界、Markdown 本地链接和 Python 语法
+python3 scripts/check_repository.py
+python3 -m compileall -q scripts minimind/model minimind/trainer
+```
+
+训练与评测依赖沿用 [`minimind/requirements.txt`](minimind/requirements.txt)。正式复现实验前先阅读[实验计划](docs/experiment_plan.md)、[统一评测协议](docs/evaluation_protocol.md)和[仓库管理方式](docs/repository-management.md)；命令、配置与硬件口径以对应实验目录中的 `command.sh`、`config.json`、`run.json` 为准。
 
 ## 项目目标
 
@@ -20,6 +55,7 @@ MiniMind Lab 是一个围绕 64M 级小语言模型展开的可复现实验项�
 - [数据工程文档索引](docs/data/README.md)
   - [Pretrain v1 数据协议](docs/data/pretrain/data_protocol.md)
   - [SFT v1 数据协议](docs/data/sft/data_protocol.md)
+- [A10 KV Cache / GQA 推理实验](experiments/08-inference/I01-I04-a10-20260914/report.md)
 - [最终实验报告](docs/final_report.md)
 - [简历项目介绍](docs/resume_project.md)
 - [Phase8 蒸馏负结果与收口报告](experiments/07-distill/sequence-v1-20260909/report.md)
@@ -74,13 +110,6 @@ DPO、GRPO/CISPO 和 Agentic RL 默认从同一个 Full SFT 基线分支，避�
 [Phase 5 已收尾](docs/phases/phase5-verifiable-rl.md)：修复 v1 的模板—答案位置混杂后，R02 的 GRPO/CISPO 在平衡 test 上都只有 25% pass@1，并塌缩为答案位置策略；pass@4 还比 S10 低约 16pp，因此完成但不晋级。
 
 当前结论：P03 是 Pretrain 主线，S10 是后训练共同 release。Phase3–5 均已完成受控对照，但没有新的候选权重通过目标能力门，均不替换 S10；DPO 的离线 preference 改善和 RL 的训练 reward 都不能单独外推为真实能力提升。
-
-## 克隆
-
-```bash
-git clone git@github.com:Qi18/minimind-lab.git
-cd minimind-lab
-```
 
 `minimind/` 已作为普通源码目录进入仓库，不需要初始化 Submodule。
 
