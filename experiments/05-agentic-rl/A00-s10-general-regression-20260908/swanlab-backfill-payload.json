@@ -1,0 +1,25 @@
+{
+  "experiment_id": "A00-s10-general-regression-20260908",
+  "metrics": {
+    "ifeval_percent/prompt_level_strict_acc": 17.375231053604438,
+    "ifeval_percent/prompt_level_loose_acc": 19.77818853974122,
+    "ifeval_percent/inst_level_strict_acc": 29.97601918465228,
+    "ifeval_percent/inst_level_loose_acc": 32.97362110311751,
+    "seven_percent/ceval-valid": 23.25408618127786,
+    "seven_percent/cmmlu": 25.246071490243484,
+    "seven_percent/arc_easy": 34.34343434343434,
+    "seven_percent/piqa": 56.14798694232862,
+    "seven_percent/openbookqa": 28.000000000000004,
+    "seven_percent/hellaswag": 28.20155347540331,
+    "seven_percent/social_iqa": 35.823950870010236,
+    "seven_macro_percent": 33.002440471813976,
+    "ifeval_strict_pass": 94,
+    "evaluation_wall_seconds": 442.39305378403515
+  },
+  "config": {
+    "model_sha256": "851ad62d58986bc72b6d8b0e17ebd06e6635f8f5c7161aff8e50ab1104569bce",
+    "dtype": "float16",
+    "fewshot": 0,
+    "ifeval_prompts": 541
+  }
+}

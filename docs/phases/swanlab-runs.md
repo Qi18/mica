@@ -147,3 +147,7 @@ Workspace 固定为 `@richliu0153`。完整 URL 形如 `https://swanlab.cn/@rich
 
 - K00-student-IFEval: https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/15gy76hx
 - K00-teacher-IFEval: https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/3uavnnjv
+
+## Phase8 Qwen3-8B候选资格评测（running）
+
+- K00-qwen3-8b-ifeval-20260909: https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/fjfxv8yz

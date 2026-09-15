@@ -57,3 +57,8 @@ A01-S10反映Agent SFT及混合回放的整体变化；A02/A03-A01才是本轮RL
 - A01: /data/artifacts/minimind-lab/phase6-general-A01-20260908（耗时444.7秒）。
 - A02: /data/artifacts/minimind-lab/phase6-general-A02-20260908（耗时450.5秒）。
 - A03: /data/artifacts/minimind-lab/phase6-general-A03-20260908（耗时438.7秒）。
+
+## SwanLab 补传（2026-09-08）
+
+用户已授权补传历史指标与实验元信息；未重新训练/评测，不上传权重、数据或完整逐题文本。
+云端已完成且172项指标回读一致：[实验记录](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/79f294dc)。上文仅本地状态为补传前历史。

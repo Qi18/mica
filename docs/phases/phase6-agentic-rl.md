@@ -19,7 +19,7 @@
 
 下表直接来自registry；completed表示实验执行完成，不表示该模型通过晋级。
 首轮BF16审计中止记invalidated，原始attempt状态保存在phase6-acceptance.json及各FAILURE.json。
-无云端run的汇总/通用回归是有意使用local-only，不是缺失指标；CPFS路径见各archive-manifest。
+汇总/通用回归最初为local-only；用户授权后已补传并回读核验，CPFS路径见各archive-manifest。
 
 | experiment_id | 执行状态 | 实验报告 | SwanLab |
 |---|---|---|---|
@@ -49,12 +49,12 @@
 | A02-agentic-rl-v2-test-20260908 | completed | [报告](../../experiments/05-agentic-rl/A02-agentic-rl-v2-test-20260908/report.md) | [run](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/l6kyh7yq) |
 | A03-agentic-rl-v2-val-20260908 | completed | [报告](../../experiments/05-agentic-rl/A03-agentic-rl-v2-val-20260908/report.md) | [run](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/yognri61) |
 | A03-agentic-rl-v2-test-20260908 | completed | [报告](../../experiments/05-agentic-rl/A03-agentic-rl-v2-test-20260908/report.md) | [run](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/op09vul1) |
-| A02-A03-rl-v2-summary-20260908 | completed | [报告](../../experiments/05-agentic-rl/A02-A03-rl-v2-summary-20260908/report.md) | 无云端run（仅L20） |
-| A00-s10-general-regression-20260908 | completed | [报告](../../experiments/05-agentic-rl/A00-s10-general-regression-20260908/report.md) | 无云端run（仅L20） |
-| A01-general-regression-20260908 | completed | [报告](../../experiments/05-agentic-rl/A01-general-regression-20260908/report.md) | 无云端run（仅L20） |
-| A02-general-regression-20260908 | completed | [报告](../../experiments/05-agentic-rl/A02-general-regression-20260908/report.md) | 无云端run（仅L20） |
-| A03-general-regression-20260908 | completed | [报告](../../experiments/05-agentic-rl/A03-general-regression-20260908/report.md) | 无云端run（仅L20） |
-| A00-A03-general-regression-20260908 | completed | [报告](../../experiments/05-agentic-rl/A00-A03-general-regression-20260908/report.md) | 无云端run（仅L20） |
+| A02-A03-rl-v2-summary-20260908 | completed | [报告](../../experiments/05-agentic-rl/A02-A03-rl-v2-summary-20260908/report.md) | [run](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/563ab2ac) |
+| A00-s10-general-regression-20260908 | completed | [报告](../../experiments/05-agentic-rl/A00-s10-general-regression-20260908/report.md) | [run](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/0cb93996) |
+| A01-general-regression-20260908 | completed | [报告](../../experiments/05-agentic-rl/A01-general-regression-20260908/report.md) | [run](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/da935c86) |
+| A02-general-regression-20260908 | completed | [报告](../../experiments/05-agentic-rl/A02-general-regression-20260908/report.md) | [run](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/c74379f7) |
+| A03-general-regression-20260908 | completed | [报告](../../experiments/05-agentic-rl/A03-general-regression-20260908/report.md) | [run](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/a739ed89) |
+| A00-A03-general-regression-20260908 | completed | [报告](../../experiments/05-agentic-rl/A00-A03-general-regression-20260908/report.md) | [run](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/79f294dc) |
 
 各run的角色、名称和输入checkpoint可查对应报告/provenance；训练与评测不共用一个含糊的run链接。
 
@@ -147,9 +147,21 @@ A04 rollout系统对比为可选项，本轮未做。旧Tool修复、新seed及�
 ## 9. 证据与修订
 
 完整证据索引见experiments/05-agentic-rl、registry、docs/phases/swanlab-runs.md。
-汇总及通用回归只在L20，没有外传SwanLab；现有训练/单臂评测链接均保留。
+汇总及通用回归已获用户授权补传SwanLab，云端指标回读一致；现有训练/单臂评测链接均保留。
 博客为本仓库草稿，不发布网站。
 
 | 日期 | 变更 | 原因 |
 |---|---|---|
 | 2026-09-08 | 汇总SFT、RL失败/复验及通用回归，按completed-not-promoted收尾 | 用户明确同意提交验收，保留模型门槛失败 |
+
+## Phase6 SwanLab 补传完成（2026-09-08）
+
+6个历史指标记录已获用户授权补传至MiniMind-Lab；云端均为FINISHED，282项指标回读一致。
+仅上传指标/元信息，不上传权重、数据集或完整逐题文本；不改变completed-not-promoted结论。
+
+- A02-A03-rl-v2-summary-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/563ab2ac)
+- A00-A03-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/79f294dc)
+- A00-s10-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/0cb93996)
+- A01-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/da935c86)
+- A02-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/c74379f7)
+- A03-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/a739ed89)

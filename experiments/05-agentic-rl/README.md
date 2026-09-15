@@ -38,3 +38,15 @@ A01与GRPO均451/480，CISPO461/480（+2.08pp，配对95%CI +0.83至+3.54）。
 ## 正式阶段验收
 
 用户同意按completed-not-promoted收尾，详见[正式Phase6报告](../../docs/phases/phase6-agentic-rl.md)。实验执行状态与模型晋级分开；registry状态整理的历史映射见phase6-acceptance.json。S10继续保留。
+
+## Phase6 SwanLab 补传完成（2026-09-08）
+
+6个历史指标记录已获用户授权补传至MiniMind-Lab；云端均为FINISHED，282项指标回读一致。
+仅上传指标/元信息，不上传权重、数据集或完整逐题文本；不改变completed-not-promoted结论。
+
+- A02-A03-rl-v2-summary-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/563ab2ac)
+- A00-A03-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/79f294dc)
+- A00-s10-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/0cb93996)
+- A01-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/da935c86)
+- A02-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/c74379f7)
+- A03-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/a739ed89)

@@ -91,3 +91,15 @@ GRPO记录的最大ratio超界token比例约0.355%，19/32个outer的末次inner
 
 完整逐项变化与配对区间见[通用回归报告](phase6-general-regression-report.md)。
 不临时添加下降容差；旧Tool仍5/8，模型不晋级。完整原始证据保存在CPFS，仅轻量结果入仓库，未上传、未commit/push。
+
+## Phase6 SwanLab 补传完成（2026-09-08）
+
+6个历史指标记录已获用户授权补传至MiniMind-Lab；云端均为FINISHED，282项指标回读一致。
+仅上传指标/元信息，不上传权重、数据集或完整逐题文本；不改变completed-not-promoted结论。
+
+- A02-A03-rl-v2-summary-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/563ab2ac)
+- A00-A03-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/79f294dc)
+- A00-s10-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/0cb93996)
+- A01-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/da935c86)
+- A02-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/c74379f7)
+- A03-general-regression-20260908: [SwanLab](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/a739ed89)

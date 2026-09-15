@@ -1,0 +1,10 @@
+{
+  "status": "uploaded",
+  "experiment_id": "A02-A03-rl-v2-summary-20260908",
+  "run_id": "563ab2ac",
+  "url": "https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/563ab2ac",
+  "payload_sha256": "dadc7f8a8ba1b35b060da3f6793f919bf3c7c9c776983a4c8b3afa9c3e60f286",
+  "metric_count": 54,
+  "uploaded_at": "2026-09-08T12:48:06.540172+00:00",
+  "scope": "metrics-and-config-only"
+}

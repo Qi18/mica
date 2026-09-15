@@ -68,3 +68,8 @@ IFEval、七项基准未在这轮运行。探索性结果归档不等于Phase6�
 - A03 swanlab_train: https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/vdwjd3sg
 - A03 swanlab_val: https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/yognri61
 - A03 swanlab_test: https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/op09vul1
+
+## SwanLab 补传（2026-09-08）
+
+用户已授权补传历史指标与实验元信息；未重新训练/评测，不上传权重、数据或完整逐题文本。
+云端已完成且54项指标回读一致：[实验记录](https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/563ab2ac)。上文仅本地状态为补传前历史。

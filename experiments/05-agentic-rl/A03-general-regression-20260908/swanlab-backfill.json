@@ -1,0 +1,10 @@
+{
+  "status": "uploaded",
+  "experiment_id": "A03-general-regression-20260908",
+  "run_id": "a739ed89",
+  "url": "https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/a739ed89",
+  "payload_sha256": "a63169069ed59fb7ea5dd7e734d9ed748e7ae062a93937a4810c3d6d8dc98d7d",
+  "metric_count": 14,
+  "uploaded_at": "2026-09-08T12:48:17.283659+00:00",
+  "scope": "metrics-and-config-only"
+}

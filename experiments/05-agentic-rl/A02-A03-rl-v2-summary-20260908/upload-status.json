@@ -1,18 +1,5 @@
 {
-  "status": "awaiting-user-approval",
-  "destination": "SwanLab MiniMind-Lab",
-  "would_upload": {
-    "A01/test_graph_e2e": 0.9875,
-    "A01/test_tools_e2e": 0.8916666666666667,
-    "A01/legacy_chat": 0.8,
-    "A01/legacy_tool": 0.625,
-    "A02/test_graph_e2e": 0.9958333333333333,
-    "A02/test_tools_e2e": 0.8833333333333333,
-    "A02/legacy_chat": 0.8,
-    "A02/legacy_tool": 0.625,
-    "A03/test_graph_e2e": 0.9958333333333333,
-    "A03/test_tools_e2e": 0.925,
-    "A03/legacy_chat": 0.8,
-    "A03/legacy_tool": 0.625
-  }
+  "status": "uploaded-and-verified",
+  "url": "https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/563ab2ac",
+  "user_authorized": true
 }

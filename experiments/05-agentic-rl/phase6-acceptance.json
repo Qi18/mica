@@ -11,7 +11,19 @@
     "passed": false
   },
   "general_regression": "completed",
-  "swanlab_summary_upload": "not authorized; remains local-only",
+  "swanlab_summary_upload": {
+    "status": "uploaded-and-verified",
+    "user_authorized": true,
+    "runs": {
+      "A02-A03-rl-v2-summary-20260908": "https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/563ab2ac",
+      "A00-A03-general-regression-20260908": "https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/79f294dc",
+      "A00-s10-general-regression-20260908": "https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/0cb93996",
+      "A01-general-regression-20260908": "https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/da935c86",
+      "A02-general-regression-20260908": "https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/c74379f7",
+      "A03-general-regression-20260908": "https://swanlab.cn/@richliu0153/MiniMind-Lab/runs/a739ed89"
+    },
+    "metric_count": 282
+  },
   "experiment_count": 32,
   "registry_status_transitions": [
     {
