@@ -1,18 +1,22 @@
 # Mica 架构
 
-Mica 的运行代码位于 `src/mica_llm/`，安装后通过 `mica` 命令使用。
+Mica 的运行代码位于 `model/、dataset/、trainer/、inference/`，安装后通过 `mica` 命令使用。
 初始 Dense/MoE 实现从本仓库已有 MiniMind 模型派生，保持 state_dict 键名一致。
-未来结构演进直接在 Mica 实现中进行，历史 MiniMind 模型保留为兼容性测试参照。
+未来结构演进直接在 Mica 实现中进行，使用迁移前冻结的 Dense/MoE logits 检查兼容，不保留第二份模型实现。
 
 | 模块 | 职责 |
 |---|---|
-| modeling_mica.py | MicaConfig、Attention、Dense/MoE FFN、因果语言模型 |
-| data.py | 文本/单轮问答转 token JSONL，SFT prompt mask |
-| runtime.py | 模型加载、checkpoint 解析、token 加权 NLL |
-| dataset.py | JSONL 偏移索引、逐行校验与 SHA256 |
-| training.py | DDP、梯度累积、全局 token loss、原子 checkpoint 与恢复 |
-| inference.py | 贪心文本生成、非流式 chat completions HTTP 接口 |
-| cli.py | 统一命令入口 |
+| model/modeling_mica.py | 唯一 Dense/MoE 模型 |
+| model/model_lora.py | LoRA |
+| model/runtime.py | checkpoint 加载、导入与批处理 |
+| dataset/prepare.py | 数据转换 |
+| dataset/indexed.py | 按需索引 |
+| dataset/lm_dataset.py | 专用训练 Dataset |
+| trainer/training.py | DDP、累积、checkpoint 与恢复 |
+| trainer/train_*.py | 保留的各阶段训练脚本 |
+| evaluation/loss.py | NLL / PPL |
+| inference/generation.py | 生成与服务 |
+| mica.py | CLI 与公开导入 |
 
 ## 数据与训练
 

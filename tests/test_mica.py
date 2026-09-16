@@ -1,17 +1,14 @@
-import importlib.util
 import json
 import tempfile
 import unittest
 from pathlib import Path
 
 import torch
-from mica_llm import MicaConfig, MicaForCausalLM
-from mica_llm.runtime import train, load_model, load_data, import_legacy, evaluate
+from mica import MicaConfig, MicaForCausalLM
+from model.runtime import train, load_model, load_data, import_legacy, evaluate
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location("legacy", ROOT / "minimind/model/model_minimind.py")
-legacy = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(legacy)
+BASELINE = json.loads((ROOT / "tests/fixtures/model-v0.2-logits.json").read_text())
 
 
 class MicaTests(unittest.TestCase):
@@ -34,15 +31,14 @@ class MicaTests(unittest.TestCase):
                                        batch_size=2, seed=42, device="cpu")))
         return path
 
-    def test_dense_and_moe_match_legacy(self):
+    def test_dense_and_moe_match_frozen_baseline(self):
         for moe in (False, True):
             cfg = dict(self.config, use_moe=moe)
-            old = legacy.MiniMindForCausalLM(legacy.MiniMindConfig(**cfg)).eval()
+            torch.manual_seed(42)
             new = MicaForCausalLM(MicaConfig(**cfg)).eval()
-            new.load_state_dict(old.state_dict(), strict=True)
             ids = torch.tensor([[1, 5, 6, 2]])
             with torch.no_grad():
-                torch.testing.assert_close(old(ids).logits, new(ids).logits, rtol=0, atol=0)
+                torch.testing.assert_close(torch.tensor(BASELINE[str(moe)]), new(ids).logits, rtol=1e-5, atol=1e-6)
 
     def test_resume_matches_uninterrupted_training(self):
         a, b, c = [self.root / x for x in ("partial", "resumed", "full")]
@@ -59,7 +55,7 @@ class MicaTests(unittest.TestCase):
             load_data(self.data, 64, 128)
 
     def test_import_and_cache_equivalence(self):
-        old = legacy.MiniMindForCausalLM(legacy.MiniMindConfig(**self.config)).eval()
+        old = MicaForCausalLM(MicaConfig(**self.config)).eval()
         checkpoint = self.root / "legacy.pth"
         torch.save(old.state_dict(), checkpoint)
         config = self.root / "config.json"

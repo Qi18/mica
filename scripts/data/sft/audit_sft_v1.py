@@ -364,7 +364,7 @@ def audit(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     acceptance_path = args.acceptance_config.resolve()
     acceptance = yaml.safe_load(acceptance_path.read_text(encoding="utf-8"))
-    tokenizer_path = Path.cwd() / "minimind" / "model"
+    tokenizer_path = Path.cwd() / "tokenizer"
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
     bos_id = tokenizer(
         f"{tokenizer.bos_token}assistant\n", add_special_tokens=False

@@ -1,8 +1,8 @@
 Mica
-The initial model implementation in src/mica_llm/modeling_mica.py is derived from
+The initial model implementation in model/modeling_mica.py is derived from
 MiniMind (https://github.com/jingyaogong/minimind), imported at commit
 393e387e9ad99f0f04c296e4c5e7353f4444629f and subsequently modified in this repository.
-The upstream Apache-2.0 license is preserved in minimind/LICENSE.
+The upstream Apache-2.0 license is preserved in LICENSE.
 Mica v0.1 renames model/config classes and model_type while preserving tensor keys.
 Existing MiniMind checkpoints and benchmark results retain their original provenance.
 The new name does not imply an independently designed architecture.

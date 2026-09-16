@@ -10,8 +10,8 @@ import time
 import unittest
 
 import torch
-from mica_llm.runtime import train, load_model, read_json
-from mica_llm.dataset import JsonlDataset
+from model.runtime import train, load_model, read_json
+from dataset.indexed import JsonlDataset
 
 
 class TrainingTests(unittest.TestCase):
@@ -45,7 +45,7 @@ class TrainingTests(unittest.TestCase):
 
     def run_ddp(self, recipe, output, resume=None):
         command = [sys.executable, "-m", "torch.distributed.run", "--standalone", "--nproc_per_node=2",
-                   "-m", "mica_llm", "train", "--recipe", str(recipe), "--output", str(output)]
+                   "-m", "mica", "train", "--recipe", str(recipe), "--output", str(output)]
         if resume:
             command += ["--resume", str(resume)]
         subprocess.run(command, check=True, timeout=90, stdout=subprocess.PIPE,
@@ -69,7 +69,7 @@ class TrainingTests(unittest.TestCase):
     def test_signal_checkpoint_resumes_exactly(self):
         recipe = self.recipe("long", steps=10000)
         output = self.root / "interrupted"
-        command = [sys.executable, "-m", "mica_llm", "train", "--recipe", str(recipe), "--output", str(output)]
+        command = [sys.executable, "-m", "mica", "train", "--recipe", str(recipe), "--output", str(output)]
         process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:
             deadline = time.monotonic() + 30
@@ -110,7 +110,7 @@ class TrainingTests(unittest.TestCase):
             return original_save(*args, **kwargs)
 
         output = self.root / "save-failure"
-        with patch("mica_llm.training.torch.save", side_effect=fail_third):
+        with patch("trainer.training.torch.save", side_effect=fail_third):
             with self.assertRaisesRegex(RuntimeError, "simulated storage failure"):
                 train(self.recipe("failure"), output)
         self.assertEqual(read_json(output / "latest.json")["checkpoint"], "checkpoints/step-00000002")

@@ -23,6 +23,4 @@
 - 模型：按独立设计引入 Attention/FFN/MoE 结构变化并记录配置版本。
 - 推理：流式返回、批处理和部署方案。
 
-历史脚本仍位于 scripts/ 和 minimind/trainer/；其存在不代表上述功能
-已经通过 Mica CLI 的验证。GitHub 仓库已统一为 Qi18/mica。
-历史目录和记录中的原始路径继续保留，以便追溯原始命令与证据。
+专用训练脚本位于 trainer/，可复用工具位于 scripts/；历史阶段脚本与记录位于 archive/。保留不代表全部已通过新 CLI 和 GPU 验收。

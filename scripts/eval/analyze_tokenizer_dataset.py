@@ -19,7 +19,7 @@ from transformers import AutoTokenizer
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from minimind.dataset.lm_dataset import (  # noqa: E402
+from dataset.lm_dataset import (  # noqa: E402
     AgentRLDataset,
     DPODataset,
     PretrainDataset,
@@ -208,7 +208,7 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--fixture-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--tokenizer", type=Path, default=ROOT / "minimind/model")
+    parser.add_argument("--tokenizer", type=Path, default=ROOT / "tokenizer")
     parser.add_argument("--max-length", type=int, default=768)
     parser.add_argument("--fixture-max-length", type=int, default=128)
     parser.add_argument("--audit-sample-size", type=int, default=2000)

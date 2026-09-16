@@ -16,9 +16,9 @@ import torch
 
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "minimind"))
+sys.path.insert(0, str(ROOT))
 
-from model.model_minimind import MiniMindConfig, MiniMindForCausalLM  # noqa: E402
+from model.modeling_mica import MicaConfig, MicaForCausalLM  # noqa: E402
 
 
 def shapes(value: Any) -> Any:
@@ -44,7 +44,7 @@ def parameter_group(name: str) -> str:
 
 
 def inspect_variant(use_moe: bool, batch_size: int, seq_len: int) -> dict[str, Any]:
-    config = MiniMindConfig(
+    config = MicaConfig(
         hidden_size=768,
         num_hidden_layers=8,
         use_moe=use_moe,
@@ -52,7 +52,7 @@ def inspect_variant(use_moe: bool, batch_size: int, seq_len: int) -> dict[str, A
     )
     torch.manual_seed(42)
     torch.cuda.manual_seed_all(42)
-    model = MiniMindForCausalLM(config).cuda().train()
+    model = MicaForCausalLM(config).cuda().train()
     groups: dict[str, int] = {}
     for name, parameter in model.named_parameters():
         group = parameter_group(name)

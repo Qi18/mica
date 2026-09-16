@@ -15,12 +15,12 @@ def main():
     p.add_argument("--merged", required=True)
     p.add_argument("--output", type=Path, required=True)
     a=p.parse_args()
-    sys.path.insert(0,str(Path("minimind").resolve()))
-    from model.model_minimind import MiniMindConfig, MiniMindForCausalLM
+    sys.path.insert(0,str(Path(".").resolve()))
+    from model.modeling_mica import MicaConfig, MicaForCausalLM
     from model.model_lora import apply_lora, load_lora
     torch.backends.cuda.matmul.allow_tf32=False
     torch.backends.cudnn.allow_tf32=False
-    base=MiniMindForCausalLM(MiniMindConfig(hidden_size=768,num_hidden_layers=8)).eval()
+    base=MicaForCausalLM(MicaConfig(hidden_size=768,num_hidden_layers=8)).eval()
     base.load_state_dict(torch.load(a.base,map_location="cpu",weights_only=True),strict=True)
     apply_lora(base,rank=16)
     load_lora(base,a.adapter)
@@ -28,12 +28,12 @@ def main():
     for name,module in base.named_modules():
         if isinstance(module,torch.nn.Linear) and hasattr(module,"lora"):
             state[name+".weight"]=module.weight.detach()+module.lora.B.weight.detach()@module.lora.A.weight.detach()
-    merged=MiniMindForCausalLM(base.config).eval()
+    merged=MicaForCausalLM(base.config).eval()
     merged.load_state_dict(state,strict=True)
-    saved=MiniMindForCausalLM(base.config).eval()
+    saved=MicaForCausalLM(base.config).eval()
     saved.load_state_dict(torch.load(a.merged,map_location="cpu",weights_only=True),strict=True)
     base,merged,saved=base.cuda(),merged.cuda(),saved.cuda()
-    tok=AutoTokenizer.from_pretrained("minimind/model")
+    tok=AutoTokenizer.from_pretrained("tokenizer")
     prompts=["Write a Python function add(a, b).","Write a function that reverses a list.","解释什么是机器学习。","Return only JSON with key answer and value 42.","Translate hello into Chinese.","Write a Python function to check even numbers."]
     results=[]
     with torch.inference_mode():

@@ -3,7 +3,7 @@ name: minimind-sft-v1-32m-formal-acceptance
 status: smoke_accepted_formal_gates_pending
 data_config: configs/data/sft/build_v1.yaml
 source_config: configs/data/sft/sources_v1.yaml
-tokenizer: minimind/model
+tokenizer: tokenizer
 sequence_length: 768
 seed: 42
 

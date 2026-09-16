@@ -9,7 +9,7 @@ def grams(s):
     s=norm(s);return {s[i:i+5] for i in range(max(1,len(s)-4))}
 def main():
     p=argparse.ArgumentParser();p.add_argument("data",type=Path);a=p.parse_args()
-    tok=AutoTokenizer.from_pretrained("minimind/model");m=json.loads((a.data/"manifest.json").read_text())
+    tok=AutoTokenizer.from_pretrained("tokenizer");m=json.loads((a.data/"manifest.json").read_text())
     results={};seen={};near=[];inv=defaultdict(list);sets=[];owners=[]
     for split in ("test","validation","train"):
         path=a.data/(split+".jsonl")

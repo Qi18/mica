@@ -35,7 +35,7 @@ contracts:
 
 comparison_contract:
   base_checkpoint: P03
-  tokenizer: minimind/model
+  tokenizer: tokenizer
   sequence_length: 768
   train_target_tokens: 32000000
   validation_target_tokens: 160000

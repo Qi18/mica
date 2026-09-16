@@ -37,7 +37,7 @@ capacity_evidence:
   measured_with:
     builder: scripts/data/sft/build_sft_v1.py
     strict_verifier_version: strict-v1.2
-    tokenizer: minimind/model
+    tokenizer: tokenizer
     sequence_length: 768
   strict_format:
     train_available_targets: 737059

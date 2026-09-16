@@ -28,7 +28,7 @@ def main():
     p=argparse.ArgumentParser();p.add_argument("--output",type=Path,required=True);a=p.parse_args()
     if a.output.exists(): raise SystemExit("refusing existing output")
     source=Path("/data/datasets/minimind/312afb4f76391145c6902f765bb51691c09a12f5/dpo.jsonl")
-    tok=AutoTokenizer.from_pretrained("minimind/model")
+    tok=AutoTokenizer.from_pretrained("tokenizer")
     refs=[r["prompt"] for r in load_dataset("google/IFEval",split="train")]
     sys.path.insert(0,str(Path("scripts/eval").resolve()))
     from eval_sft_behavior import CHAT_CASES,TOOL_CASES

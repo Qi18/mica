@@ -205,7 +205,7 @@ def main() -> int:
     if int(config.get("schema_version", 0)) != 1:
         raise BuildError("official pilot config schema_version must be 1")
     source_metadata_digest = source_metadata_sha(config)
-    tokenizer_path = repo_root / "minimind" / "model"
+    tokenizer_path = repo_root / "tokenizer"
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
     database_path = Path(config["paths"]["work_database"])
     output_root = Path(config["paths"]["final_root"])
@@ -245,7 +245,7 @@ def main() -> int:
             "acceptance_config_sha256": file_sha256(acceptance_path),
             "builder": "scripts/data/sft/build_official_pilot_v1.py",
             "builder_sha256": file_sha256(Path(__file__)),
-            "tokenizer": "minimind/model",
+            "tokenizer": "tokenizer",
             "tokenizer_sha256": tokenizer_digest(tokenizer_path),
             "source_metadata_sha256": source_metadata_digest,
         },

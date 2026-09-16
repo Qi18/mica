@@ -1731,7 +1731,7 @@ def main() -> int:
     work_root = args.work_root or Path(config["paths"]["work_root"])
     database_path = work_root / f"{args.stage}-candidates.sqlite"
     sources = load_sources(config, repo_root)
-    tokenizer_path = repo_root / "minimind" / "model"
+    tokenizer_path = repo_root / "tokenizer"
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
     connection = initialize_database(database_path)
     try:
@@ -1770,7 +1770,7 @@ def main() -> int:
             "acceptance_config_sha256": file_sha256(repo_root / config["contracts"]["acceptance"]),
             "builder": "scripts/data/sft/build_sft_v1.py",
             "builder_sha256": file_sha256(Path(__file__)),
-            "tokenizer": "minimind/model",
+            "tokenizer": "tokenizer",
             "tokenizer_sha256": tokenizer_digest(tokenizer_path),
         },
         "source_objects": [

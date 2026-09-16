@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from mica_llm.data import prepare
+from dataset.prepare import prepare
 
 
 class Tokenizer:
@@ -23,7 +23,7 @@ class DataTests(unittest.TestCase):
             root = Path(directory)
             source, output = root / "source.jsonl", root / "tokens.jsonl"
             source.write_text(json.dumps({"prompt": "hi", "response": "ok"}) + "\n")
-            with patch("mica_llm.data.AutoTokenizer.from_pretrained", return_value=Tokenizer()):
+            with patch("dataset.prepare.AutoTokenizer.from_pretrained", return_value=Tokenizer()):
                 prepare(source, "fixture", output)
                 row = json.loads(output.read_text())
                 self.assertEqual(row["labels"], [-100, -100, -100, 3, 3, 2])

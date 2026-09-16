@@ -68,7 +68,7 @@ def main() -> None:
                         f"broken local link: {relative} -> {match.group(1)}"
                     )
 
-    for required in (ROOT / "minimind/LICENSE", ROOT / "docs/upstream-minimind.md"):
+    for required in (ROOT / "LICENSE", ROOT / "docs/upstream-minimind.md"):
         if not required.is_file():
             failures.append(f"missing upstream attribution asset: {required.relative_to(ROOT)}")
 

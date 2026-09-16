@@ -1,51 +1,19 @@
-# Python
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
 venv/
-
-# Secrets and local environment
 .env
 .env.*
 !.env.example
-
-# Training data and generated artifacts
-data/
-!configs/data/
-!configs/data/pretrain/
-!configs/data/pretrain/*.yaml
-!configs/data/sft/
-!configs/data/sft/*.yaml
-!configs/data/*.txt
-!scripts/data/
-!scripts/data/*.md
-!scripts/data/pretrain/
-!scripts/data/pretrain/*.py
-!scripts/data/sft/
-!scripts/data/sft/*.py
-scripts/data/**/__pycache__/
-!docs/data/
-!docs/data/*.md
-!docs/data/pretrain/
-!docs/data/pretrain/*.md
-!docs/data/sft/
-!docs/data/sft/*.md
-datasets/
-checkpoints/
-outputs/
-logs/
-swanlog/
-swanlab/
-wandb/
-experiments/**/pretrain_pilot_*.log
-experiments/**/pretrain_pilot_*.pid
-experiments/**/pretrain_v1_*.log
-experiments/**/pretrain_v1_*.pid
-experiments/**/eval/.steps/
-experiments/**/pilot-*
-experiments/**/source.patch
-experiments/**/status-before.txt
+/data/
+/datasets/
+/checkpoints/
+/outputs/
+/logs/
+/swanlog/
+/swanlab/
+/wandb/
 *.log
 *.pid
 *.lock
@@ -54,17 +22,19 @@ experiments/**/status-before.txt
 *.pth
 *.ckpt
 *.safetensors
-
-# Keep only the artifact policy file in Git
+archive/experiments/**/eval/.steps/
+archive/experiments/**/source.patch
+archive/experiments/**/status-before.txt
 artifacts/*
 !artifacts/.gitignore
-
-# Editor and OS
 .DS_Store
 .idea/
 .vscode/
-
-# Python packaging
 *.egg-info/
 build/
 dist/
+# Retained local-only historical weights; never source dependencies.
+/minimind/
+
+# Historical local-only untracked run artifacts remain in place.
+/experiments/

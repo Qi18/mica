@@ -3,7 +3,7 @@ name: minimind-official-sft-32m-formal-acceptance
 status: frozen_before_build
 data_config: configs/data/sft/build_official_formal_v1.yaml
 contamination_config: configs/data/sft/contamination_v1.yaml
-tokenizer: minimind/model
+tokenizer: tokenizer
 sequence_length: 768
 seed: 42
 

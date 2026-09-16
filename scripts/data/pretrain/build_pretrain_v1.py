@@ -199,7 +199,7 @@ def sampling_seed(config: dict[str, Any]) -> int:
 def tokenizer_path(cli_value: Path | None, config: dict[str, Any]) -> Path:
     return (
         cli_value
-        or Path(str(config.get("tokenizer", "minimind/model")))
+        or Path(str(config.get("tokenizer", "tokenizer")))
     ).resolve()
 
 
@@ -2240,7 +2240,7 @@ def verify(args: argparse.Namespace) -> int:
     if loader_hook is None:
         default_loader = (
             Path(__file__).resolve().parents[3]
-            / "minimind/dataset/lm_dataset.py"
+            / "dataset/lm_dataset.py"
         )
         if not default_loader.exists():
             raise FileNotFoundError(default_loader)
@@ -2505,7 +2505,7 @@ def self_test(args: argparse.Namespace) -> int:
             )
         )
         default_loader = (
-            Path.cwd() / "minimind/dataset/lm_dataset.py"
+            Path.cwd() / "dataset/lm_dataset.py"
         )
         hook = (
             f"{default_loader}:PretrainDataset"

@@ -1,7 +1,7 @@
 schema_version: 2
 name: minimind-pretrain-v1
 model_scope: 64m-dense
-tokenizer: minimind/model
+tokenizer: tokenizer
 sequence_length: 768
 seed: 42
 

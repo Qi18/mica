@@ -26,7 +26,7 @@ Mica 是一个面向个人开发者的语言模型项目。从一个可以读懂
 
 当前主线提供约 **64M 参数的 Dense 配置**，并支持 **约 198M 总参数、约 64M 激活参数的 MoE 配置**。小型 CPU 配置用于快速跑通流程，完整配置用于后续训练与架构演进。
 
-初始架构派生自 [MiniMind](https://github.com/jingyaogong/minimind)。Mica 的工程入口、训练与恢复逻辑和后续结构演进独立维护；来源说明与原始许可证保留在 [NOTICE](NOTICE) 和 [minimind/LICENSE](minimind/LICENSE)。
+初始架构派生自 [MiniMind](https://github.com/jingyaogong/minimind)。Mica 的工程入口、训练与恢复逻辑和后续结构演进独立维护；来源说明与原始许可证保留在 [NOTICE](NOTICE) 和 [LICENSE](LICENSE)。
 
 ### 🎉 本项目包含
 
@@ -39,14 +39,14 @@ Mica 是一个面向个人开发者的语言模型项目。从一个可以读懂
 - **架构演进**：独立 `MicaConfig` / `MicaForCausalLM`，保留旧权重导入和数值兼容测试。
 - **技术资料**：数据工程、预训练、后训练与 KV Cache / GQA 的已有案例与源码阅读笔记。
 
-> 当前 Mica CLI 已验证单进程和双进程 CPU 训练。CUDA 多卡尚待实机验收；LoRA、DPO、GRPO/CISPO、Agentic RL 和完整通用 benchmark 的历史实现保留在仓库中，正在逐步迁入新入口。
+> 当前 Mica CLI 已验证单进程和双进程 CPU 训练。CUDA 多卡尚待实机验收；LoRA、DPO、GRPO/CISPO、Agentic RL 和完整通用 benchmark 的专用训练脚本保留在 trainer/，尚未统一纳入 CLI；历史实验资料位于 archive/。
 
 ### 📦 模型与配置
 
 | 配置 | 参数规模 | 用途 | 当前状态 |
 |---|---:|---|---|
-| CPU Smoke | 微型模型 | 验证安装、训练、保存、加载与评测 | [可直接运行](recipes/smoke/cpu.json) |
-| Mica Dense 64M | 63,912,192 | 预训练、SFT、结构改造 | [模型配置](recipes/models/mica-64m.json) |
+| CPU Smoke | 微型模型 | 验证安装、训练、保存、加载与评测 | [可直接运行](configs/smoke/cpu.json) |
+| Mica Dense 64M | 63,912,192 | 预训练、SFT、结构改造 | [模型配置](configs/models/mica-64m.json) |
 | Mica MoE 198M | 198,416,640；名义激活 63,936,768 | 稀疏 FFN 与路由改造 | 基于 Dense 配置设置 `use_moe=true` |
 | S10 兼容权重 | 原 MiniMind 64M | 验证旧权重导入与推理 | strict-load 与生成已通过；未公开下载 |
 
@@ -84,7 +84,7 @@ pip install -e .
 mica doctor
 ```
 
-`mica doctor` 会显示项目版本、PyTorch / Transformers 版本和可见 GPU 数量。项目名与 CLI 为 `mica`，Python 导入名保留为 `mica_llm`，安装分发名为 `mica-llm`。
+`mica doctor` 会显示项目版本、PyTorch / Transformers 版本和可见 GPU 数量。项目名与 CLI 为 `mica`，Python 导入名为 `mica`，安装分发名为 `mica-llm`。
 
 ## Ⅱ 在 CPU 上跑通训练
 
@@ -92,7 +92,7 @@ mica doctor
 
 ```bash
 mica train \
-  --recipe recipes/smoke/cpu.json \
+  --recipe configs/smoke/cpu.json \
   --output outputs/smoke
 
 mica evaluate \
@@ -123,7 +123,7 @@ outputs/smoke/
 
 # 🧠 模型结构
 
-Mica 的模型实现位于 [modeling_mica.py](src/mica_llm/modeling_mica.py)。
+Mica 的模型实现位于 [modeling_mica.py](model/modeling_mica.py)。
 
 ```text
 Token IDs
@@ -154,7 +154,7 @@ Next-token logits
 | MoE 可选项 | 4 experts、top-1 routing |
 
 ```python
-from mica_llm import MicaConfig, MicaForCausalLM
+from mica import MicaConfig, MicaForCausalLM
 
 config = MicaConfig(hidden_size=768, num_hidden_layers=8, use_moe=False)
 model = MicaForCausalLM(config)
@@ -188,14 +188,14 @@ moe = MicaForCausalLM(MicaConfig(use_moe=True))
 ```bash
 mica data \
   --source /path/to/source.jsonl \
-  --tokenizer minimind/model \
+  --tokenizer tokenizer \
   --output outputs/train.jsonl \
   --max-length 768
 ```
 
 SFT 的 prompt label 设置为 `-100`，只监督回复。截断后没有有效监督 token 的样本会报错。输出逐行生成；出现错误时不会留下一个看似完成的数据文件。
 
-初始 tokenizer 保留在 `minimind/model/`，以维持旧权重兼容。修改词表后，需要同步模型配置并重新训练相应权重。
+初始 tokenizer 保留在 `tokenizer/`，以维持旧权重兼容。修改词表后，需要同步模型配置并重新训练相应权重。
 
 ## Ⅱ 配置训练
 
@@ -223,13 +223,13 @@ SFT 的 prompt label 设置为 `-100`，只监督回复。截断后没有有效�
 }
 ```
 
-将其保存为 `recipes/custom.json`，再执行：
+将其保存为 `configs/custom.json`，再执行：
 
 ```bash
-mica train --recipe recipes/custom.json --output outputs/custom
+mica train --recipe configs/custom.json --output outputs/custom
 ```
 
-`data` 相对 recipe 文件解析。使用完整 64M 模型时，将 `model` 替换为 [64M 配置](recipes/models/mica-64m.json) 的内容，并根据设备调整 batch、学习率和训练预算。
+`data` 相对 recipe 文件解析。使用完整 64M 模型时，将 `model` 替换为 [64M 配置](configs/models/mica-64m.json) 的内容，并根据设备调整 batch、学习率和训练预算。
 
 SFT 可在 recipe 中设置 `initialize_from`，指向已有 Mica 模型目录。该路径同样相对 recipe 解析。
 
@@ -238,8 +238,8 @@ SFT 可在 recipe 中设置 `initialize_from`，指向已有 Mica 模型目录�
 先用双进程 CPU 示例验证 DDP：
 
 ```bash
-torchrun --standalone --nproc_per_node=2 -m mica_llm train \
-  --recipe recipes/smoke/cpu-ddp.json \
+torchrun --standalone --nproc_per_node=2 -m mica train \
+  --recipe configs/smoke/cpu-ddp.json \
   --output outputs/ddp
 ```
 
@@ -256,7 +256,7 @@ CUDA 配置将 `device` 设为 `cuda`，每个进程使用 `LOCAL_RANK` 对应�
 增加 recipe 的总 `steps`，然后恢复到新输出目录：
 
 ```bash
-mica train --recipe recipes/custom.json \
+mica train --recipe configs/custom.json \
   --resume outputs/custom --output outputs/custom-resumed
 ```
 
@@ -273,7 +273,7 @@ mica train --recipe recipes/custom.json \
 ```bash
 mica import-legacy \
   --checkpoint /path/to/legacy.pth \
-  --config recipes/models/mica-64m.json \
+  --config configs/models/mica-64m.json \
   --output outputs/imported
 ```
 
@@ -284,7 +284,7 @@ mica import-legacy \
 ```bash
 mica generate \
   --model outputs/imported \
-  --tokenizer minimind/model \
+  --tokenizer tokenizer \
   --prompt "介绍一下你自己" \
   --max-new-tokens 64
 ```
@@ -298,7 +298,7 @@ pip install -e ".[serve]"
 
 mica serve \
   --model outputs/imported \
-  --tokenizer minimind/model \
+  --tokenizer tokenizer \
   --port 8000
 ```
 
@@ -334,11 +334,11 @@ python scripts/check_repository.py
 
 | 方向 | 观察 | 资料 |
 |---|---|---|
-| 数据与预训练 | P03 共享 validation NLL 2.604，优于 P02 的 3.191；对比包含多项数据管线变化 | [项目案例](docs/final_report.md) |
-| 指令微调 | S10 在阶段冻结协议下 IFEval prompt strict 17.38%，较 S09 +6.29pp | [SFT 报告](docs/phases/phase2-sft.md) |
-| KV Cache / GQA | A10 固定轨迹测量中 cache decode 加速 0.82–6.23×，GQA KV 字节减半 | [推理性能](experiments/08-inference/I01-I04-a10-20260914/report.md) |
+| 数据与预训练 | P03 共享 validation NLL 2.604，优于 P02 的 3.191；对比包含多项数据管线变化 | [项目案例](archive/docs/final_report.md) |
+| 指令微调 | S10 在阶段冻结协议下 IFEval prompt strict 17.38%，较 S09 +6.29pp | [SFT 报告](archive/docs/phases/phase2-sft.md) |
+| KV Cache / GQA | A10 固定轨迹测量中 cache decode 加速 0.82–6.23×，GQA KV 字节减半 | [推理性能](archive/experiments/08-inference/I01-I04-a10-20260914/report.md) |
 
-更多源码分析见 [阅读索引](docs/source_reading/README.md)。数据集、权重、optimizer 状态与完整日志单独保存，不进入 Git。
+更多源码分析见 [阅读索引](archive/docs/source_reading/README.md)。数据集、权重、optimizer 状态与完整日志单独保存，不进入 Git。
 
 ---
 
@@ -346,15 +346,34 @@ python scripts/check_repository.py
 
 ```text
 mica/
-├── src/mica_llm/       # 模型、数据、训练、评测、推理与 CLI
-├── recipes/            # 模型与训练配置
-├── examples/           # 最小示例
-├── tests/              # 数值兼容与训练行为测试
-├── docs/               # 架构、使用说明与技术资料
-├── minimind/           # 初始来源快照与 tokenizer
-├── scripts/            # 待迁入新入口的既有训练和评测实现
-└── experiments/        # 已有结果与原始配置档案
+├── model/              # 唯一模型实现、LoRA 与 checkpoint 加载
+├── dataset/            # 数据转换、Dataset 与按需索引
+├── trainer/            # 统一训练引擎及各阶段训练脚本
+├── evaluation/         # token 加权评测
+├── inference/          # 生成、服务与交互入口
+├── tokenizer/          # 独立维护的 Tokenizer
+├── configs/            # 当前模型、smoke 与数据配置
+├── scripts/            # 可复用数据、评测与工程工具
+├── tests/
+├── examples/
+├── docs/
+├── archive/            # 旧实验、阶段脚本、报告与博客
+└── mica.py             # CLI 与 Python 入口
 ```
+
+## 保留的训练脚本
+
+预训练、SFT、LoRA、DPO、GRPO、PPO、蒸馏和 Agent RL 脚本位于 trainer/，均导入同一份 Mica 模型。
+mica train 使用配置驱动训练引擎；其他专用脚本未全部迁入该入口，本轮不做全量训练验收。
+额外依赖见 requirements-training.txt（历史依赖快照，安装前核对与主线依赖的兼容性）。
+
+```bash
+cd trainer
+python train_pretrain.py --help
+# 正式运行时显式传入 --data_path、--save_dir 等参数
+```
+
+历史重放见 [归档说明](archive/README.md)。L20 原 minimind/ 下忽略的权重和日志保持原位置，不是源码依赖；全新克隆不含该目录。
 
 # 🧭 后续计划
 

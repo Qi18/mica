@@ -36,10 +36,10 @@ def main():
     p.add_argument("--data-dir", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
     a = p.parse_args()
-    sys.path.insert(0, str(Path("minimind").resolve()))
+    sys.path.insert(0, str(Path(".").resolve()))
     from dataset.lm_dataset import SFTDataset
     from transformers import AutoTokenizer
-    tok = AutoTokenizer.from_pretrained("minimind/model")
+    tok = AutoTokenizer.from_pretrained("tokenizer")
     manifest = json.loads((a.data_dir/"manifest.json").read_text())
     checks = {}
     for name, meta in manifest["files"].items():

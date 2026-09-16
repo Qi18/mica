@@ -3,9 +3,9 @@
 ## 单进程与多进程
 
 ```bash
-mica train --recipe recipes/smoke/cpu.json --output outputs/smoke
-torchrun --standalone --nproc_per_node=2 -m mica_llm train \
-  --recipe recipes/smoke/cpu-ddp.json --output outputs/ddp
+mica train --recipe configs/smoke/cpu.json --output outputs/smoke
+torchrun --standalone --nproc_per_node=2 -m mica train \
+  --recipe configs/smoke/cpu-ddp.json --output outputs/ddp
 ```
 
 CUDA 配置将 device 设为 cuda；torchrun 的 LOCAL_RANK 决定每进程使用哪张可见卡。

@@ -35,7 +35,7 @@ contracts:
 
 comparison_contract:
   base_checkpoint: same_as_custom_pilot
-  tokenizer: minimind/model
+  tokenizer: tokenizer
   sequence_length: 768
   train_target_tokens: 8000000
   validation_target_tokens: 40000

@@ -2726,7 +2726,7 @@ def run(
                 "padded_compute_tokens": "sequence_length per valid row",
             },
             "implementation_alignment": (
-                "Matches minimind/dataset/lm_dataset.py PretrainDataset with "
+                "Matches dataset/lm_dataset.py PretrainDataset with "
                 "add_special_tokens=False, truncation at sequence_length-2, "
                 "then BOS/EOS and right padding."
             ),

@@ -96,7 +96,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--tokenizer", type=Path, default=Path("minimind/model"))
+    parser.add_argument("--tokenizer", type=Path, default=Path("tokenizer"))
     parser.add_argument("--validation-rows", type=int, default=1000)
     parser.add_argument("--split-seed", type=int, default=20260907)
     parser.add_argument("--max-length", type=int, default=768)

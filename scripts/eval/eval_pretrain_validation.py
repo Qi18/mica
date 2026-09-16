@@ -135,7 +135,7 @@ def main() -> None:
         help="JSONL path or glob; repeat the option for multiple patterns.",
     )
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--minimind-dir", type=Path, default=Path("minimind"))
+    parser.add_argument("--project-dir", "--minimind-dir", dest="minimind_dir", type=Path, default=Path("."))
     parser.add_argument("--dataset-success", type=Path)
     parser.add_argument("--dataset-fingerprint")
     parser.add_argument("--hidden-size", type=int, default=768)
@@ -187,7 +187,7 @@ def main() -> None:
         raise FileExistsError(f"output already exists (use --overwrite): {output}")
     if not checkpoint.is_file():
         raise FileNotFoundError(f"checkpoint not found: {checkpoint}")
-    if not (minimind_dir / "model" / "model_minimind.py").is_file():
+    if not (minimind_dir / "model" / "modeling_mica.py").is_file():
         raise FileNotFoundError(f"MiniMind source not found: {minimind_dir}")
     data_files = expand_data_files(args.data)
     dataset_identity = load_dataset_identity(
@@ -200,9 +200,9 @@ def main() -> None:
 
     sys.path.insert(0, str(minimind_dir))
     from dataset.lm_dataset import PretrainDataset
-    from model.model_minimind import MiniMindConfig, MiniMindForCausalLM
+    from model.modeling_mica import MicaConfig, MicaForCausalLM
 
-    tokenizer_path = minimind_dir / "model"
+    tokenizer_path = minimind_dir / "tokenizer"
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, local_files_only=True)
     dataset = PretrainDataset(
         [str(path) for path in data_files], tokenizer, max_length=args.max_seq_len
@@ -223,12 +223,12 @@ def main() -> None:
         persistent_workers=args.num_workers > 0,
     )
 
-    config = MiniMindConfig(
+    config = MicaConfig(
         hidden_size=args.hidden_size,
         num_hidden_layers=args.num_hidden_layers,
         use_moe=False,
     )
-    model = MiniMindForCausalLM(config)
+    model = MicaForCausalLM(config)
     state_dict = torch.load(checkpoint, map_location="cpu", weights_only=True)
     if not isinstance(state_dict, dict) or not state_dict:
         raise TypeError("checkpoint is not a non-empty raw inference state_dict")

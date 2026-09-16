@@ -4,7 +4,7 @@ status: frozen_before_build
 data_config: configs/data/sft/build_pilot_v1.yaml
 source_config: configs/data/sft/sources_v1.yaml
 contamination_config: configs/data/sft/contamination_v1.yaml
-tokenizer: minimind/model
+tokenizer: tokenizer
 sequence_length: 768
 seed: 42
 

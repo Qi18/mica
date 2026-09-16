@@ -24,16 +24,16 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--minimind-dir", type=Path, default=Path("minimind"))
+    parser.add_argument("--project-dir", "--minimind-dir", dest="minimind_dir", type=Path, default=Path("."))
     parser.add_argument("--hidden-size", type=int, default=768)
     parser.add_argument("--num-hidden-layers", type=int, default=8)
     parser.add_argument("--dtype", choices=("float16", "bfloat16", "float32"), default="float16")
     args = parser.parse_args()
 
     sys.path.insert(0, str(args.minimind_dir.resolve()))
-    from model.model_minimind import MiniMindConfig
+    from model.modeling_mica import MicaConfig
 
-    source_config = MiniMindConfig(
+    source_config = MicaConfig(
         hidden_size=args.hidden_size,
         num_hidden_layers=args.num_hidden_layers,
         use_moe=False,
@@ -60,7 +60,7 @@ def main() -> None:
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(args.output_dir, safe_serialization=True)
-    tokenizer = AutoTokenizer.from_pretrained(args.minimind_dir / "model")
+    tokenizer = AutoTokenizer.from_pretrained(args.minimind_dir / "tokenizer")
     tokenizer.save_pretrained(args.output_dir)
     manifest = {
         "source_checkpoint": str(args.checkpoint),

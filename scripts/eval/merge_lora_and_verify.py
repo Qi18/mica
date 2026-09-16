@@ -21,7 +21,7 @@ def sha256(path: Path) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--minimind-dir", type=Path, default=Path("minimind"))
+    parser.add_argument("--project-dir", "--minimind-dir", dest="minimind_dir", type=Path, default=Path("."))
     parser.add_argument("--base-checkpoint", type=Path, required=True)
     parser.add_argument("--adapter", type=Path, required=True)
     parser.add_argument("--output-checkpoint", type=Path, required=True)
@@ -33,17 +33,17 @@ def main() -> None:
 
     sys.path.insert(0, str(args.minimind_dir.resolve()))
     from model.model_lora import apply_lora, load_lora
-    from model.model_minimind import MiniMindConfig, MiniMindForCausalLM
+    from model.modeling_mica import MicaConfig, MicaForCausalLM
 
-    config = MiniMindConfig(hidden_size=768, num_hidden_layers=8, use_moe=False)
+    config = MicaConfig(hidden_size=768, num_hidden_layers=8, use_moe=False)
     base_state = torch.load(args.base_checkpoint, map_location="cpu", weights_only=True)
-    model = MiniMindForCausalLM(config)
+    model = MicaForCausalLM(config)
     model.load_state_dict(base_state, strict=True)
     model = model.to(args.device).eval()
     apply_lora(model, rank=args.rank)
     load_lora(model, args.adapter)
 
-    tokenizer = AutoTokenizer.from_pretrained(args.minimind_dir / "model")
+    tokenizer = AutoTokenizer.from_pretrained(args.minimind_dir / "tokenizer")
     prompt = tokenizer.apply_chat_template(
         [{"role": "user", "content": "Write a Python function add(a, b)."}],
         tokenize=False,
@@ -71,7 +71,7 @@ def main() -> None:
 
     args.output_checkpoint.parent.mkdir(parents=True, exist_ok=True)
     torch.save(merged_state, args.output_checkpoint)
-    merged = MiniMindForCausalLM(config)
+    merged = MicaForCausalLM(config)
     merged.load_state_dict(torch.load(args.output_checkpoint, map_location="cpu", weights_only=True), strict=True)
     merged = merged.to(args.device).eval()
     with torch.inference_mode(), torch.cuda.amp.autocast(dtype=torch.bfloat16):
