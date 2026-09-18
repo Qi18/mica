@@ -570,7 +570,7 @@ MiniMind训练数据集下载地址： [ModelScope](https://www.modelscope.cn/da
 ![structure](images/LLM-structure.jpg)
 ![structure-moe](images/LLM-structure-moe.jpg)
 
-修改模型配置见[../../model/modeling_mica.py](../../model/modeling_mica.py)，参考模型参数版本见下表：
+修改模型配置见[../../model/modeling_mica.py](../../model/model_mica.py)，参考模型参数版本见下表：
 
 | Model Name | params | len_vocab | max_pos | rope_theta | n_layers | d_model | kv_heads | q_heads | note |
 |------------|--------|-----------|---------|------------|----------|---------|----------|---------|------|

@@ -10,9 +10,9 @@ ROOT = Path(__file__).resolve().parents[1]
 class LayoutTests(unittest.TestCase):
     def test_public_imports_and_tokenizer(self):
         from mica import MicaConfig
-        from model.modeling_mica import MicaConfig as Impl
+        from model.model_mica import MicaConfig as Impl
         self.assertIs(MicaConfig, Impl)
-        for name in ("dataset.indexed", "dataset.prepare", "trainer.training",
+        for name in ("dataset.indexed", "dataset.prepare", "trainer.common.engine",
                      "evaluation.loss", "inference.generation", "model.model_lora"):
             importlib.import_module(name)
         tok = AutoTokenizer.from_pretrained(ROOT / "tokenizer", local_files_only=True)

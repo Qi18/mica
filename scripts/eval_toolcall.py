@@ -12,8 +12,8 @@ import torch
 from datetime import datetime
 from transformers import AutoTokenizer, AutoModelForCausalLM, TextStreamer
 from openai import OpenAI
-from model.modeling_mica import MicaConfig, MicaForCausalLM
-from trainer.trainer_utils import setup_seed, get_model_params
+from model.model_mica import MicaConfig, MicaForCausalLM
+from trainer.common.utils import setup_seed, get_model_params
 warnings.filterwarnings('ignore')
 
 TOOLS = [

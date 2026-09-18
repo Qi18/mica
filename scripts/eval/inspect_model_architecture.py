@@ -18,7 +18,7 @@ import torch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from model.modeling_mica import MicaConfig, MicaForCausalLM  # noqa: E402
+from model.model_mica import MicaConfig, MicaForCausalLM  # noqa: E402
 
 
 def shapes(value: Any) -> Any:

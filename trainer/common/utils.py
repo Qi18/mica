@@ -3,8 +3,8 @@
 """
 import os
 import sys
-__package__ = "trainer"
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+__package__ = "trainer.common"
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 import random
 import math
 import numpy as np
@@ -13,7 +13,7 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import Sampler
 from transformers import AutoTokenizer, AutoModel, AutoModelForSequenceClassification
-from model.modeling_mica import MicaForCausalLM
+from model.model_mica import MicaForCausalLM
 
 def get_model_params(model, config):
     total = sum(p.numel() for p in model.parameters()) / 1e6

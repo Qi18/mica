@@ -33,7 +33,7 @@ def main() -> None:
 
     sys.path.insert(0, str(args.minimind_dir.resolve()))
     from model.model_lora import apply_lora, load_lora
-    from model.modeling_mica import MicaConfig, MicaForCausalLM
+    from model.model_mica import MicaConfig, MicaForCausalLM
 
     config = MicaConfig(hidden_size=768, num_hidden_layers=8, use_moe=False)
     base_state = torch.load(args.base_checkpoint, map_location="cpu", weights_only=True)

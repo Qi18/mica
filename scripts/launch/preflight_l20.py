@@ -49,7 +49,7 @@ def main() -> None:
             fail(f"missing command: {command_name}")
     if not MINIMIND_PYTHON.is_file():
         fail(f"MiniMind Python not found: {MINIMIND_PYTHON}")
-    if not (ROOT_DIR / "model" / "modeling_mica.py").is_file():
+    if not (ROOT_DIR / "model" / "model_mica.py").is_file():
         fail("run from the Mica repository")
 
     gpu_lines = run(["nvidia-smi", "-L"]).stdout.strip().splitlines()

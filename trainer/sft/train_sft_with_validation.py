@@ -7,8 +7,8 @@ import sys
 import time
 from contextlib import nullcontext
 
-__package__ = "trainer"
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+__package__ = "trainer.sft"
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 import datasets  # noqa: F401
 import torch
@@ -18,9 +18,9 @@ from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, DistributedSampler, Subset
 
 from dataset.lm_dataset import SFTDataset
-from model.modeling_mica import MicaConfig
+from model.model_mica import MicaConfig
 from model.model_lora import apply_lora, save_lora
-from trainer.trainer_utils import Logger, get_lr, init_distributed_mode, init_model, is_main_process, setup_seed
+from trainer.common.utils import Logger, get_lr, init_distributed_mode, init_model, is_main_process, setup_seed
 
 
 def reduce_sum(values, device):

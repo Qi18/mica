@@ -569,7 +569,7 @@ The `minimind-3` series structure is shown below:
 ![structure](images/LLM-structure.jpg)
 ![structure-moe](images/LLM-structure-moe.jpg)
 
-To modify model configuration, see [../../model/modeling_mica.py](../../model/modeling_mica.py). Reference model parameter versions are shown in the table below:
+To modify model configuration, see [../../model/modeling_mica.py](../../model/model_mica.py). Reference model parameter versions are shown in the table below:
 
 | Model Name | params | len_vocab | max_pos | rope_theta | n_layers | d_model | kv_heads | q_heads | note |
 |------------|--------|-----------|---------|------------|----------|---------|----------|---------|------|

@@ -4,8 +4,8 @@ import os
 import sys
 import time
 
-__package__ = "trainer"
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+__package__ = "trainer.sft"
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 import datasets  # noqa: F401
 import torch
@@ -15,8 +15,8 @@ from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, DistributedSampler
 
 from dataset.lm_dataset import SFTDataset
-from model.modeling_mica import MicaConfig
-from trainer.trainer_utils import init_distributed_mode, init_model, setup_seed
+from model.model_mica import MicaConfig
+from trainer.common.utils import init_distributed_mode, init_model, setup_seed
 
 
 def main():

@@ -110,7 +110,7 @@ class TrainingTests(unittest.TestCase):
             return original_save(*args, **kwargs)
 
         output = self.root / "save-failure"
-        with patch("trainer.training.torch.save", side_effect=fail_third):
+        with patch("trainer.common.engine.torch.save", side_effect=fail_third):
             with self.assertRaisesRegex(RuntimeError, "simulated storage failure"):
                 train(self.recipe("failure"), output)
         self.assertEqual(read_json(output / "latest.json")["checkpoint"], "checkpoints/step-00000002")

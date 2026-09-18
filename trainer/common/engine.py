@@ -12,7 +12,7 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel
 
 from dataset.indexed import JsonlDataset
-from model.modeling_mica import MicaConfig, MicaForCausalLM
+from model.model_mica import MicaConfig, MicaForCausalLM
 from model.runtime import read_json, write_json, validate_config, load_model, batch, resolve_checkpoint
 
 

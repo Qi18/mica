@@ -5,8 +5,8 @@ python -m sglang.launch_server --model-path ./minimind-3 --attention-backend tri
 import os
 import sys
 
-__package__ = "trainer"
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+__package__ = "trainer.common"
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 import requests
 import torch

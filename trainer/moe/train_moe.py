@@ -17,6 +17,13 @@ model tensors plus optimizer/scaler state. This entry adds:
 """
 
 import argparse
+import signal
+STOP_SIGNAL = False
+def request_stop(*_):
+    global STOP_SIGNAL
+    STOP_SIGNAL = True
+signal.signal(signal.SIGTERM, request_stop)
+signal.signal(signal.SIGINT, request_stop)
 import json
 import math
 import os
@@ -25,8 +32,8 @@ import time
 import warnings
 from contextlib import nullcontext
 
-__package__ = "trainer"
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+__package__ = "trainer.moe"
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 import datasets  # noqa: F401
 import torch
@@ -36,8 +43,8 @@ from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, DistributedSampler, Subset
 
 from dataset.lm_dataset import PretrainDataset
-from model.modeling_mica import MicaConfig
-from trainer.trainer_utils import (
+from model.model_mica import MicaConfig
+from trainer.common.utils import (
     Logger,
     SkipBatchSampler,
     get_lr,
@@ -405,6 +412,9 @@ def main():
     local_rank = init_distributed_mode()
     if dist.is_initialized():
         args.device = f"cuda:{local_rank}"
+    torch.use_deterministic_algorithms(True)
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
     setup_seed(42 + rank())
     device = torch.device(args.device)
 
@@ -521,8 +531,19 @@ def main():
     if args.use_compile:
         model = torch.compile(model)
     if dist.is_initialized():
-        model = DistributedDataParallel(model, device_ids=[local_rank])
+        model = DistributedDataParallel(model, device_ids=[local_rank], find_unused_parameters=True, bucket_cap_mb=1024)
 
+    route_counts = {}
+    observe_route = False
+    def route_hook(layer):
+        def capture(module, inputs, logits):
+            if observe_route:
+                counts = torch.bincount(logits.detach().argmax(-1).flatten(), minlength=4).double()
+                route_counts[layer] = counts
+        return capture
+    if lm_config.use_moe:
+        for layer, block in enumerate(unwrap_model(model).model.layers):
+            block.mlp.gate.register_forward_hook(route_hook(layer))
     validation_loader = build_validation_loader(validation_dataset, args)
 
     swanlab = None
@@ -557,7 +578,10 @@ def main():
             init_kwargs["tags"] = tags
         if run_id:
             init_kwargs.update({"id": run_id, "resume": "must"})
-        swanlab.init(**init_kwargs)
+        init_kwargs["mode"] = "online"
+        run = swanlab.init(**init_kwargs)
+        with open(os.path.join(args.save_dir, "swanlab-url.txt"), "w") as handle:
+            handle.write(run.url + "\n")
 
     schedule_record = {
         "event": "schedule",
@@ -591,7 +615,7 @@ def main():
     stop_requested = optimizer_step >= resolved_target_optimizer_steps
     final_epoch = start_epoch
     final_micro_step = start_micro_step
-    window_totals = torch.zeros(3, dtype=torch.float64, device=device)
+    window_totals = torch.zeros(4, dtype=torch.float64, device=device)
     window_finite = torch.ones((), dtype=torch.bool, device=device)
     window_micro_steps = 0
     window_optimizer_steps = 0
@@ -667,6 +691,7 @@ def main():
                 micro_steps_per_epoch - window_start + 1,
             )
 
+            observe_route = (optimizer_step + 1) % 100 == 0 and (micro_step - 1) % args.accumulation_steps == 0
             with autocast_ctx:
                 result = model(input_ids, labels=labels)
                 auxiliary_loss = (
@@ -682,6 +707,7 @@ def main():
             window_totals[0].add_(result.loss.detach().double() * valid_tokens)
             window_totals[1].add_(valid_tokens)
             window_totals[2].add_(padded_tokens)
+            window_totals[3].add_(auxiliary_loss.detach().double() * valid_tokens)
             cumulative_local_padded_tokens.add_(padded_tokens)
             window_micro_steps += 1
 
@@ -712,7 +738,11 @@ def main():
             optimizer_step += 1
             window_optimizer_steps += 1
 
-            reached_bound = optimizer_step >= resolved_target_optimizer_steps
+            # Test injection sends a real signal to rank0; all ranks stop at one boundary.
+            if rank() == 0 and optimizer_step == int(os.environ.get("PHASE7_SIGNAL_STEP", "-1")):
+                os.kill(os.getpid(), signal.SIGTERM)
+            signal_requested = bool(reduce_max(int(STOP_SIGNAL), device))
+            reached_bound = optimizer_step >= resolved_target_optimizer_steps or signal_requested
             should_evaluate = (
                 args.eval_interval > 0
                 and optimizer_step % args.eval_interval == 0
@@ -734,7 +764,7 @@ def main():
                     torch.cuda.synchronize(device)
                 elapsed = time.perf_counter() - window_started
                 local_active_training_seconds += elapsed
-                global_nll, global_tokens, global_padded_tokens = reduce_sum(
+                global_nll, global_tokens, global_padded_tokens, global_aux = reduce_sum(
                     window_totals,
                     device,
                 )
@@ -762,6 +792,8 @@ def main():
                     "micro_step": micro_step,
                     "optimizer_step": optimizer_step,
                     "train_loss": train_loss,
+                    "aux_loss": global_aux / max(global_tokens, 1),
+                    "total_loss_token_weighted_diagnostic": (global_nll + global_aux) / max(global_tokens, 1),
                     "learning_rate": current_lr,
                     "grad_norm": grad_norm_max,
                     "valid_tokens_per_second": (
@@ -794,6 +826,14 @@ def main():
                     f"step_s={optimizer_step_seconds:.4f} "
                     f"peak_mem={peak_memory_mib:.0f}MiB"
                 )
+                for layer, counts in route_counts.items():
+                    if dist.is_initialized():
+                        dist.all_reduce(counts)
+                    fractions = counts / counts.sum()
+                    for expert, value in enumerate(fractions.tolist()):
+                        metric[f"router/layer{layer}/expert{expert}_fraction"] = value
+                    metric[f"router/layer{layer}/max_mean_load"] = float(fractions.max() * 4)
+                route_counts.clear()
                 append_metric(args.metrics_path, metric, swanlab)
                 window_totals.zero_()
                 window_finite.fill_(True)
@@ -925,7 +965,7 @@ def main():
     completed_record = {
         "event": "completed",
         "status": (
-            "max_steps_reached"
+            "interrupted_checkpointed" if STOP_SIGNAL else "max_steps_reached"
             if args.max_steps and optimizer_step >= args.max_steps
             else "epochs_complete"
         ),

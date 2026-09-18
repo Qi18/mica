@@ -8,7 +8,7 @@ import torch
 import transformers
 import warnings
 from transformers import AutoTokenizer, AutoModelForCausalLM, Qwen3Config, Qwen3ForCausalLM, Qwen3MoeConfig, Qwen3MoeForCausalLM
-from model.modeling_mica import MicaConfig, MicaForCausalLM
+from model.model_mica import MicaConfig, MicaForCausalLM
 from model.model_lora import apply_lora, merge_lora
 
 warnings.filterwarnings('ignore', category=UserWarning)

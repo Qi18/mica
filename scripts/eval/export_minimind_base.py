@@ -31,7 +31,7 @@ def main() -> None:
     args = parser.parse_args()
 
     sys.path.insert(0, str(args.minimind_dir.resolve()))
-    from model.modeling_mica import MicaConfig
+    from model.model_mica import MicaConfig
 
     source_config = MicaConfig(
         hidden_size=args.hidden_size,

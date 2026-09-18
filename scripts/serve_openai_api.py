@@ -18,7 +18,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from transformers import AutoTokenizer, AutoModelForCausalLM, TextStreamer
-from model.modeling_mica import MicaConfig, MicaForCausalLM
+from model.model_mica import MicaConfig, MicaForCausalLM
 from model.model_lora import apply_lora, load_lora
 
 warnings.filterwarnings('ignore')

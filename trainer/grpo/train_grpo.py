@@ -1,8 +1,8 @@
 import os
 import sys
 
-__package__ = "trainer"
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+__package__ = "trainer.grpo"
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 import datasets  # noqa: F401  # Windows pyarrow/torch DLL conflict workaround (issue #771)
 import argparse
@@ -20,10 +20,10 @@ from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, DistributedSampler
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from transformers import AutoModel
-from model.modeling_mica import MicaConfig, MicaForCausalLM
+from model.model_mica import MicaConfig, MicaForCausalLM
 from dataset.lm_dataset import RLAIFDataset
-from trainer.trainer_utils import Logger, is_main_process, lm_checkpoint, init_distributed_mode, setup_seed, SkipBatchSampler, init_model, LMForRewardModel
-from trainer.rollout_engine import create_rollout_engine
+from trainer.common.utils import Logger, is_main_process, lm_checkpoint, init_distributed_mode, setup_seed, SkipBatchSampler, init_model, LMForRewardModel
+from trainer.common.rollout import create_rollout_engine
 
 warnings.filterwarnings('ignore')
 

@@ -16,7 +16,7 @@ def main():
     p.add_argument("--output", type=Path, required=True)
     a=p.parse_args()
     sys.path.insert(0,str(Path(".").resolve()))
-    from model.modeling_mica import MicaConfig, MicaForCausalLM
+    from model.model_mica import MicaConfig, MicaForCausalLM
     from model.model_lora import apply_lora, load_lora
     torch.backends.cuda.matmul.allow_tf32=False
     torch.backends.cudnn.allow_tf32=False

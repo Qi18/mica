@@ -187,7 +187,7 @@ def main() -> None:
         raise FileExistsError(f"output already exists (use --overwrite): {output}")
     if not checkpoint.is_file():
         raise FileNotFoundError(f"checkpoint not found: {checkpoint}")
-    if not (minimind_dir / "model" / "modeling_mica.py").is_file():
+    if not (minimind_dir / "model" / "model_mica.py").is_file():
         raise FileNotFoundError(f"MiniMind source not found: {minimind_dir}")
     data_files = expand_data_files(args.data)
     dataset_identity = load_dataset_identity(
@@ -200,7 +200,7 @@ def main() -> None:
 
     sys.path.insert(0, str(minimind_dir))
     from dataset.lm_dataset import PretrainDataset
-    from model.modeling_mica import MicaConfig, MicaForCausalLM
+    from model.model_mica import MicaConfig, MicaForCausalLM
 
     tokenizer_path = minimind_dir / "tokenizer"
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, local_files_only=True)

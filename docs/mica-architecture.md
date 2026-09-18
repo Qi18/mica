@@ -6,14 +6,14 @@ Mica 的运行代码位于 `model/、dataset/、trainer/、inference/`，安装�
 
 | 模块 | 职责 |
 |---|---|
-| model/modeling_mica.py | 唯一 Dense/MoE 模型 |
+| model/model_mica.py | 唯一 Dense/MoE 模型 |
 | model/model_lora.py | LoRA |
 | model/runtime.py | checkpoint 加载、导入与批处理 |
 | dataset/prepare.py | 数据转换 |
 | dataset/indexed.py | 按需索引 |
 | dataset/lm_dataset.py | 专用训练 Dataset |
-| trainer/training.py | DDP、累积、checkpoint 与恢复 |
-| trainer/train_*.py | 保留的各阶段训练脚本 |
+| trainer/common/engine.py | DDP、累积、checkpoint 与恢复 |
+| trainer/<stage>/train_*.py | 保留的各阶段训练脚本 |
 | evaluation/loss.py | NLL / PPL |
 | inference/generation.py | 生成与服务 |
 | mica.py | CLI 与公开导入 |

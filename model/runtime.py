@@ -5,7 +5,7 @@ import math
 from pathlib import Path
 
 import torch
-from .modeling_mica import MicaConfig, MicaForCausalLM
+from .model_mica import MicaConfig, MicaForCausalLM
 
 
 def read_json(path):
@@ -66,7 +66,7 @@ def batch(rows, device):
 
 
 def train(recipe_path, output, resume=None):
-    from trainer.training import train as run
+    from trainer.common.engine import train as run
     return run(recipe_path, output, resume)
 
 

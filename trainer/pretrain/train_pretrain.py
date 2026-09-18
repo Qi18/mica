@@ -18,8 +18,8 @@
 import os  # 路径拼接与建目录
 import sys  # 用于往 sys.path 注入上级目录
 
-__package__ = "trainer"  # 伪装成包内模块，使下面的 from trainer.xxx 绝对导入在直接运行脚本时也成立
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))  # 把项目根目录加入搜索路径，model / dataset / trainer 三个子包才能 import
+__package__ = "trainer.pretrain"  # 伪装成包内模块，使下面的 from trainer.xxx 绝对导入在直接运行脚本时也成立
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))  # 把项目根目录加入搜索路径，model / dataset / trainer 三个子包才能 import
 
 import datasets  # noqa: F401  # Windows pyarrow/torch DLL conflict workaround (issue #771)
 import argparse  # 命令行参数
@@ -31,10 +31,10 @@ from contextlib import nullcontext  # CPU 上用空上下文替代 autocast
 from torch import optim, nn  # 只用到 optim.AdamW，nn 是上游遗留的未用导入
 from torch.nn.parallel import DistributedDataParallel  # 多卡数据并行包装
 from torch.utils.data import DataLoader, DistributedSampler  # 数据加载与按 rank 分片
-from model.modeling_mica import MicaConfig  # 模型超参容器
+from model.model_mica import MicaConfig  # 模型超参容器
 from dataset.lm_dataset import PretrainDataset  # 预训练数据集，产出 (input_ids, labels)
 # 训练工具：cos 学习率、主进程日志、主进程判断、checkpoint 读写、DDP 初始化、随机种子、建模、跳批采样器
-from trainer.trainer_utils import get_lr, Logger, is_main_process, lm_checkpoint, init_distributed_mode, setup_seed, init_model, SkipBatchSampler
+from trainer.common.utils import get_lr, Logger, is_main_process, lm_checkpoint, init_distributed_mode, setup_seed, init_model, SkipBatchSampler
 
 warnings.filterwarnings('ignore')  # 屏蔽全部 warning（含 torch.cuda.amp 的弃用提示），让训练日志干净
 

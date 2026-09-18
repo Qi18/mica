@@ -123,7 +123,7 @@ outputs/smoke/
 
 # 🧠 模型结构
 
-Mica 的模型实现位于 [modeling_mica.py](model/modeling_mica.py)。
+Mica 的模型实现位于 [model_mica.py](model/model_mica.py)。
 
 ```text
 Token IDs
@@ -363,13 +363,15 @@ mica/
 
 ## 保留的训练脚本
 
-预训练、SFT、LoRA、DPO、GRPO、PPO、蒸馏和 Agent RL 脚本位于 trainer/，均导入同一份 Mica 模型。
+阶段目录与入口见 [Trainer 说明](trainer/README.md)。
+
+预训练、SFT、LoRA、DPO、GRPO、PPO、蒸馏和 Agent RL 脚本按阶段分布于 trainer/ 的子目录，均导入同一份 Mica 模型。
 mica train 使用配置驱动训练引擎；其他专用脚本未全部迁入该入口，本轮不做全量训练验收。
 额外依赖见 requirements-training.txt（历史依赖快照，安装前核对与主线依赖的兼容性）。
 
 ```bash
 cd trainer
-python train_pretrain.py --help
+python pretrain/train_pretrain.py --help
 # 正式运行时显式传入 --data_path、--save_dir 等参数
 ```
 

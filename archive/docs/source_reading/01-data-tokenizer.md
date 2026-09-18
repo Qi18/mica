@@ -17,7 +17,7 @@ minimind/model/tokenizer.json + tokenizer_config.json
 
 主线文件：
 
-- [`train_tokenizer.py`](../../../trainer/train_tokenizer.py)：展示 ByteLevel BPE 的训练过程；
+- [`train_tokenizer.py`](../../../trainer/tokenizer/train_tokenizer.py)：展示 ByteLevel BPE 的训练过程；
 - [`tokenizer.json`](../../../tokenizer/tokenizer.json)：固定词表与 merge 结果；
 - [`tokenizer_config.json`](../../../tokenizer/tokenizer_config.json)：特殊 token 与 chat template；
 - [`lm_dataset.py`](../../../dataset/lm_dataset.py)：五类 Dataset 的实际输入输出逻辑。

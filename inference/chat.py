@@ -8,9 +8,9 @@ import random
 import warnings
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, TextStreamer
-from model.modeling_mica import MicaConfig, MicaForCausalLM
+from model.model_mica import MicaConfig, MicaForCausalLM
 from model.model_lora import *
-from trainer.trainer_utils import setup_seed, get_model_params
+from trainer.common.utils import setup_seed, get_model_params
 warnings.filterwarnings('ignore')
 
 def init_model(args):
