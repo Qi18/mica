@@ -3,7 +3,7 @@
 | 目录 | 内容 |
 |---|---|
 | tokenizer/ | Tokenizer 训练 |
-| pretrain/ | 预训练及 validation 版本 |
+| pretrain/ | 统一预训练入口，可选精确 validation |
 | sft/ | 全参 SFT、validation 与 batch 探针 |
 | lora/ | LoRA 微调 |
 | dpo/ | 偏好优化 |

@@ -1,9 +1,10 @@
-"""MiniMind 预训练入口：单卡与 DDP 通用的 next-token 预测训练脚本。
+"""Mica 预训练入口：单卡与 DDP 通用的 next-token 预测训练脚本。
 
 主体流程写在 __main__ 的 9 个编号段里，顺序为：初始化分布式与随机种子 -> 构造 MicaConfig 并探测
 续训 checkpoint -> 配置混合精度 -> 初始化 wandb（实际 import 的是 swanlab，且只在主进程）-> 建模型、
-数据集与优化器 -> 从 checkpoint 恢复状态 -> torch.compile 与 DDP 包装 -> 逐 epoch 调用 train_epoch ->
-销毁进程组。单卡直接 python 运行，多卡用 torchrun 拉起，靠环境变量里的 RANK 自动区分。
+训练集、可选验证集与优化器 -> 从 checkpoint 恢复状态 -> torch.compile 与 DDP 包装 -> 逐 epoch
+调用 train_epoch，并在配置验证集时计算 loss/perplexity、保存 best 权重 -> 销毁进程组。单卡直接
+python 运行，多卡用 torchrun 拉起，靠环境变量里的 RANK 自动区分。
 
 几个贯穿全局的约定：
 - args、lm_config、model、optimizer、scaler、autocast_ctx 都定义在 __main__ 里，train_epoch 通过全局
@@ -14,6 +15,8 @@
   --from_resume 1 续训。
 - 续训用 SkipBatchSampler 跳过本 epoch 已消费的 batch，step 编号接着往下排；GPU 数量变化时
   lm_checkpoint 会按 world_size 折算 step。
+- --validation_path 不传时保持普通预训练；传入后每个 epoch 结束执行一次精确验证，并按最低
+  validation loss 保存 {best_weight}_{hidden_size}[_moe].pth。
 """
 import os  # 路径拼接与建目录
 import sys  # 用于往 sys.path 注入上级目录
@@ -23,6 +26,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 
 import datasets  # noqa: F401  # Windows pyarrow/torch DLL conflict workaround (issue #771)
 import argparse  # 命令行参数
+import math  # 把验证集平均 loss 换算成 perplexity
 import time  # 统计 step 耗时
 import warnings  # 配合下面的 filterwarnings
 import torch
@@ -30,13 +34,100 @@ import torch.distributed as dist  # DDP 的进程组、rank、barrier
 from contextlib import nullcontext  # CPU 上用空上下文替代 autocast
 from torch import optim, nn  # 只用到 optim.AdamW，nn 是上游遗留的未用导入
 from torch.nn.parallel import DistributedDataParallel  # 多卡数据并行包装
-from torch.utils.data import DataLoader, DistributedSampler  # 数据加载与按 rank 分片
+from torch.utils.data import DataLoader, DistributedSampler, Subset  # 数据加载、训练分片与验证子集
 from model.model_mica import MicaConfig  # 模型超参容器
 from dataset.lm_dataset import PretrainDataset  # 预训练数据集，产出 (input_ids, labels)
 # 训练工具：cos 学习率、主进程日志、主进程判断、checkpoint 读写、DDP 初始化、随机种子、建模、跳批采样器
 from trainer.common.utils import get_lr, Logger, is_main_process, lm_checkpoint, init_distributed_mode, setup_seed, init_model, SkipBatchSampler
 
 warnings.filterwarnings('ignore')  # 屏蔽全部 warning（含 torch.cuda.amp 的弃用提示），让训练日志干净
+
+
+def unwrap_model():
+    """去掉 DDP / torch.compile 包装，拿到真正的 Mica 模型。"""
+
+    raw_model = model.module if isinstance(model, DistributedDataParallel) else model
+    return getattr(raw_model, '_orig_mod', raw_model)
+
+
+def save_half_weight(path):
+    """仅主进程原子保存一份 FP16 推理权重，避免多卡同时写同一个文件。"""
+
+    if not is_main_process():
+        return
+    state_dict = unwrap_model().state_dict()  # key 与未包装模型一致，方便推理和下游阶段加载
+    half_state = {key: value.half().cpu() for key, value in state_dict.items()}
+    temporary_path = path + '.tmp'  # 先写临时文件，写完整后再替换，避免中断留下半个 checkpoint
+    torch.save(half_state, temporary_path)
+    os.replace(temporary_path, path)
+    del state_dict, half_state
+
+
+def save_training_checkpoint(epoch, step, wandb):
+    """保存当前训练权重和可续训状态；调用方负责在所有 rank 之间同步。"""
+
+    if not is_main_process():
+        return
+    model.eval()  # 保存时关闭 dropout，完成后恢复训练态
+    moe_suffix = '_moe' if lm_config.use_moe else ''
+    weight_path = f'{args.save_dir}/{args.save_weight}_{lm_config.hidden_size}{moe_suffix}.pth'
+    save_half_weight(weight_path)  # 给推理和下游阶段使用的纯 FP16 权重
+    # resume 文件额外保存 optimizer/scaler/位置以及当前 best 门槛
+    lm_checkpoint(
+        lm_config,
+        weight=args.save_weight,
+        model=model,
+        optimizer=optimizer,
+        scaler=scaler,
+        epoch=epoch,
+        step=step,
+        wandb=wandb,
+        save_dir='../checkpoints',
+        best_validation_loss=best_validation_loss,
+    )
+    model.train()
+
+
+@torch.no_grad()
+def validate(loader):
+    """在独立验证集上计算精确、按有效 token 加权的 loss 与 perplexity。
+
+    DDP 下每个 rank 只读取自己按步长切出的验证样本，既不补齐也不重复；最后 all-reduce
+    汇总 NLL、有效 token 数和样本数。因此单卡与多卡得到的是同一个全局指标。
+    """
+
+    was_training = model.training  # 验证结束后恢复调用前的 train/eval 状态
+    model.eval()
+    raw_model = unwrap_model()  # 不走 DDP forward，避免各 rank 验证 batch 数不同时发生同步等待
+    totals = torch.zeros(3, dtype=torch.float64, device=args.device)  # NLL 总和、token 数、样本数
+
+    for input_ids, labels in loader:
+        input_ids = input_ids.to(args.device, non_blocking=True)
+        labels = labels.to(args.device, non_blocking=True)
+        valid_tokens = labels[..., 1:].ne(-100).sum()  # 模型内部做 next-token shift，所以忽略 labels 第 0 位
+        with autocast_ctx:
+            result = raw_model(input_ids, labels=labels)
+        if not torch.isfinite(result.loss):
+            raise FloatingPointError('validation loss is not finite')
+        totals[0] += result.loss.detach().double() * valid_tokens  # batch mean 还原成 token NLL 总和
+        totals[1] += valid_tokens
+        totals[2] += input_ids.shape[0]
+
+    if dist.is_initialized():
+        dist.all_reduce(totals, op=dist.ReduceOp.SUM)  # 所有 rank 得到同一份全局验证结果
+    total_nll, total_tokens, total_rows = totals.tolist()
+    if total_tokens == 0:
+        raise ValueError('validation dataset has no valid next-token targets')
+
+    if was_training:
+        model.train()
+    validation_loss = total_nll / total_tokens
+    return {
+        'validation_loss': validation_loss,
+        'validation_perplexity': math.exp(min(validation_loss, 80.0)),
+        'validation_tokens': int(total_tokens),
+        'validation_rows': int(total_rows),
+    }
 
 
 def train_epoch(epoch, loader, iters, start_step=0, wandb=None):
@@ -96,21 +187,9 @@ def train_epoch(epoch, loader, iters, start_step=0, wandb=None):
             # 上报到 swanlab；非主进程或未开启时 wandb 为 None，这里直接短路
             if wandb: wandb.log({"loss": current_loss, "logits_loss": current_logits_loss, "aux_loss": current_aux_loss, "learning_rate": current_lr, "epoch_time": eta_min})
 
-        # 到存档间隔或本 epoch 最后一步，且只允许主进程写盘，避免多卡互相覆盖
-        if (step % args.save_interval == 0 or step == iters) and is_main_process():
-            model.eval()  # 存档前切 eval，关掉 dropout
-            moe_suffix = '_moe' if lm_config.use_moe else ''  # MoE 权重单独命名，避免和 Dense 权重互相覆盖
-            ckp = f'{args.save_dir}/{args.save_weight}_{lm_config.hidden_size}{moe_suffix}.pth'  # 形如 ../out/pretrain_768.pth
-            # 剥掉 DDP 包装，否则 state_dict 的 key 会多一层 module. 前缀
-            raw_model = model.module if isinstance(model, DistributedDataParallel) else model
-            raw_model = getattr(raw_model, '_orig_mod', raw_model)  # 再剥掉 torch.compile 的 _orig_mod 包装，同理是为了 key 干净
-            state_dict = raw_model.state_dict()  # 此时 key 与原始模型一致
-            # 转半精度再落盘，体积减半；这份只含权重，供推理和下游 SFT 加载
-            torch.save({k: v.half().cpu() for k, v in state_dict.items()}, ckp)
-            # 另存一份续训档到 ../checkpoints，含优化器 / scaler / epoch / step / wandb_id；内部用 tmp + os.replace 原子写
-            lm_checkpoint(lm_config, weight=args.save_weight, model=model, optimizer=optimizer, scaler=scaler, epoch=epoch, step=step, wandb=wandb, save_dir='../checkpoints')
-            model.train()  # 切回训练态
-            del state_dict  # 立刻释放这份 CPU 副本
+        # epoch 中途按间隔保存；最后一步等补完残余梯度后，由主循环统一保存
+        if step % args.save_interval == 0 and step < iters:
+            save_training_checkpoint(epoch, step, wandb)
 
         # 主动断开引用，压低峰值显存（大 batch 下比较明显）
         del input_ids, labels, res, loss
@@ -123,12 +202,15 @@ def train_epoch(epoch, loader, iters, start_step=0, wandb=None):
         scaler.update()
         optimizer.zero_grad(set_to_none=True)
 
+    return last_step  # 主循环用它记录 resume 位置，并在补更新完成后保存 epoch 末状态
+
 
 if __name__ == "__main__":  # 以下所有状态都是全局量，train_epoch 直接读取它们
     # 下面每个参数的含义见 help 文本，这里只补充 help 没说清的部分
-    parser = argparse.ArgumentParser(description="MiniMind Pretraining")
+    parser = argparse.ArgumentParser(description="Mica Pretraining")
     parser.add_argument("--save_dir", type=str, default="../out", help="模型保存目录")
     parser.add_argument('--save_weight', default='pretrain', type=str, help="保存权重的前缀名")
+    parser.add_argument('--best_weight', default='pretrain_best_val', type=str, help="验证集最优权重的前缀名")
     parser.add_argument("--epochs", type=int, default=2, help="训练轮数")
     parser.add_argument("--batch_size", type=int, default=32, help="batch size")
     parser.add_argument("--learning_rate", type=float, default=5e-4, help="初始学习率")  # 这是初始值，实际每步被 cos 曲线覆盖
@@ -144,10 +226,12 @@ if __name__ == "__main__":  # 以下所有状态都是全局量，train_epoch �
     parser.add_argument('--max_seq_len', default=340, type=int, help="训练的最大截断长度（中文1token≈1.5~1.7字符）")  # 定长训练：不足补 pad，超出直接截断
     parser.add_argument('--use_moe', default=0, type=int, choices=[0, 1], help="是否使用MoE架构（0=否，1=是）")
     parser.add_argument("--data_path", type=str, default="../dataset/pretrain_t2t_mini.jsonl", help="预训练数据路径")
+    parser.add_argument("--validation_path", type=str, default="", help="可选验证数据路径；留空则不执行验证")
+    parser.add_argument("--validation_batch_size", type=int, default=64, help="每个 rank 的验证 batch size")
     parser.add_argument('--from_weight', default='none', type=str, help="基于哪个权重训练，为none则从头开始")  # 只加载权重、不恢复优化器，用于换阶段接续（如 SFT 接预训练）
     parser.add_argument('--from_resume', default=0, type=int, choices=[0, 1], help="是否自动检测&续训（0=否，1=是）")  # 读 ../checkpoints 下的 *_resume.pth，连优化器和 step 一起恢复
     parser.add_argument("--use_wandb", action="store_true", help="是否使用wandb")
-    parser.add_argument("--wandb_project", type=str, default="MiniMind-Pretrain", help="wandb项目名")
+    parser.add_argument("--wandb_project", type=str, default="Mica-Pretrain", help="SwanLab 项目名")
     parser.add_argument("--use_compile", default=0, type=int, choices=[0, 1], help="是否使用torch.compile加速（0=否，1=是）")  # 首个 step 有编译开销，存档时需额外剥 _orig_mod
     args = parser.parse_args()  # 解析命令行
 
@@ -178,7 +262,7 @@ if __name__ == "__main__":  # 以下所有状态都是全局量，train_epoch �
         # 续训时复用同一个 run id，曲线才能接在原来那条后面
         wandb_id = ckp_data.get('wandb_id') if ckp_data else None
         resume = 'must' if wandb_id else None  # 有 id 就强制续接，否则新建 run
-        wandb_run_name = f"MiniMind-Pretrain-Epoch-{args.epochs}-BatchSize-{args.batch_size}-LearningRate-{args.learning_rate}"  # 把关键超参写进 run 名，便于在面板里区分
+        wandb_run_name = f"Mica-Pretrain-Epoch-{args.epochs}-BatchSize-{args.batch_size}-LearningRate-{args.learning_rate}"  # 把关键超参写进 run 名，便于在面板里区分
         wandb.init(project=args.wandb_project, name=wandb_run_name, id=wandb_id, resume=resume)  # 初始化实验记录
     
     # ========== 5. 定义模型、数据、优化器 ==========
@@ -186,8 +270,25 @@ if __name__ == "__main__":  # 以下所有状态都是全局量，train_epoch �
     model, tokenizer = init_model(lm_config, args.from_weight, device=args.device)
     # 读 jsonl 的 text 字段，前后加 BOS / EOS，pad 到 max_seq_len，labels 的 pad 位置为 -100
     train_ds = PretrainDataset(args.data_path, tokenizer, max_length=args.max_seq_len)
-    # 多卡时按 rank 切分样本，单卡为 None
+    # 多卡训练使用 DistributedSampler，它会负责每个 epoch 的乱序和 rank 分片
     train_sampler = DistributedSampler(train_ds) if dist.is_initialized() else None
+
+    validation_loader = None  # 默认不验证，保持原来普通预训练的行为
+    if args.validation_path:
+        # 验证集与训练集独立，避免把训练 loss 误当成泛化指标
+        validation_ds = PretrainDataset(args.validation_path, tokenizer, max_length=args.max_seq_len)
+        current_rank = dist.get_rank() if dist.is_initialized() else 0
+        current_world_size = dist.get_world_size() if dist.is_initialized() else 1
+        # 不用 DistributedSampler：它会为整除 batch 补重复样本，导致验证统计不再精确
+        validation_indices = range(current_rank, len(validation_ds), current_world_size)
+        validation_subset = Subset(validation_ds, validation_indices)
+        validation_loader = DataLoader(
+            validation_subset,
+            batch_size=args.validation_batch_size,
+            shuffle=False,
+            num_workers=args.num_workers,
+            pin_memory=True,
+        )
     # 只有 fp16 需要 loss 缩放；bf16 动态范围够用，此时 scaler 是不做事的空壳
     scaler = torch.cuda.amp.GradScaler(enabled=(args.dtype == 'float16'))
     # 未显式设 weight_decay，取 AdamW 默认的 0.01；这里的 lr 每步都会被 get_lr 覆盖
@@ -195,6 +296,7 @@ if __name__ == "__main__":  # 以下所有状态都是全局量，train_epoch �
     
     # ========== 6. 从ckp恢复状态 ==========
     start_epoch, start_step = 0, 0  # 默认从头开始
+    best_validation_loss = float('inf')  # 未验证前任何有限 loss 都能成为 best
     if ckp_data:
         # 必须在 torch.compile / DDP 包装之前加载，否则 key 前缀对不上
         model.load_state_dict(ckp_data['model'])
@@ -202,6 +304,7 @@ if __name__ == "__main__":  # 以下所有状态都是全局量，train_epoch �
         scaler.load_state_dict(ckp_data['scaler'])  # 恢复 fp16 的放大系数
         start_epoch = ckp_data['epoch']  # 从中断的那个 epoch 继续
         start_step = ckp_data.get('step', 0)  # 该 epoch 内已完成的 step 数
+        best_validation_loss = ckp_data.get('best_validation_loss', float('inf'))  # 续训时保留历史 best 门槛
     
     # ========== 7. 编译和分布式包装 ==========
     if args.use_compile == 1:
@@ -223,13 +326,37 @@ if __name__ == "__main__":  # 以下所有状态都是全局量，train_epoch �
         batch_sampler = SkipBatchSampler(train_sampler or indices, args.batch_size, skip)
         # 用了 batch_sampler 就不能再传 batch_size / shuffle / sampler，三者互斥
         loader = DataLoader(train_ds, batch_sampler=batch_sampler, num_workers=args.num_workers, pin_memory=True)
-        if skip > 0: 
+        if skip > 0:
             Logger(f'Epoch [{epoch + 1}/{args.epochs}]: 跳过前{start_step}个step，从step {start_step + 1}开始')
             # iters 把跳过的批数补回来，使日志分母和 cos 学习率进度与不中断时一致
-            train_epoch(epoch, loader, len(loader) + skip, start_step, wandb)
+            epoch_step = train_epoch(epoch, loader, len(loader) + skip, start_step, wandb)
         else:
-            train_epoch(epoch, loader, len(loader), 0, wandb)  # 正常路径
-    
+            epoch_step = train_epoch(epoch, loader, len(loader), 0, wandb)  # 正常路径
+
+        # 配了验证集才执行；普通预训练不会多一次前向，也不会生成 best 文件
+        if validation_loader is not None:
+            metrics = validate(validation_loader)
+            Logger(
+                f"Validation Epoch:[{epoch + 1}/{args.epochs}], "
+                f"loss: {metrics['validation_loss']:.6f}, "
+                f"ppl: {metrics['validation_perplexity']:.4f}, "
+                f"rows: {metrics['validation_rows']}, "
+                f"tokens: {metrics['validation_tokens']}"
+            )
+            if wandb:
+                wandb.log({**metrics, 'epoch': epoch + 1})  # 与训练曲线记录到同一个 SwanLab run
+
+            if metrics['validation_loss'] < best_validation_loss:
+                best_validation_loss = metrics['validation_loss']
+                moe_suffix = '_moe' if lm_config.use_moe else ''
+                best_path = f'{args.save_dir}/{args.best_weight}_{lm_config.hidden_size}{moe_suffix}.pth'
+                save_half_weight(best_path)
+                Logger(f'Validation improved; best weight saved to {best_path}')
+        # train_epoch 已完成 epoch 末残余梯度更新；现在保存才不会漏掉最后一次 optimizer.step()
+        save_training_checkpoint(epoch, epoch_step, wandb)
+        if dist.is_initialized():
+            dist.barrier()  # 等主进程写完普通/best 权重，再让所有 rank 同步进入下一轮
+
     # ========== 9. 清理分布进程 ==========
     if dist.is_initialized():
         dist.barrier()  # 等所有 rank 跑完，避免主进程先退导致其他 rank 卡在通信上

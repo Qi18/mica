@@ -19,6 +19,13 @@ class LayoutTests(unittest.TestCase):
         self.assertTrue(tok.encode("你好 Mica"))
         self.assertEqual(len(tok), 6400)
 
+    def test_single_pretrain_entrypoint(self):
+        pretrain = ROOT / "trainer" / "pretrain"
+        self.assertTrue((pretrain / "train_pretrain.py").is_file())
+        self.assertFalse(
+            (pretrain / "train_pretrain_with_validation.py").exists()
+        )
+
     def test_no_upstream_or_old_package_imports(self):
         tracked = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True).splitlines()
         self.assertFalse(any(p.startswith(("minimind/", "src/mica_llm/", "recipes/")) for p in tracked))

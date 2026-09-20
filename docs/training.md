@@ -39,7 +39,7 @@ mica data 输出 input_ids/labels；SFT 前缀 labels 为 -100，只对回答计
 | 目录 | 入口与说明 |
 |---|---|
 | tokenizer/ | train_tokenizer.py；由文件顶部常量控制数据与输出，不提供通用 --help |
-| pretrain/ | train_pretrain.py、train_pretrain_with_validation.py |
+| pretrain/ | train_pretrain.py；验证集可选，启用后保存 best 权重 |
 | sft/ | train_full_sft.py、train_sft_with_validation.py、probe_sft_batch.py |
 | lora/ | train_lora.py；adapter 推理需要匹配的 base |
 | dpo/ | train_dpo.py；偏好数据、策略与参考模型 |
@@ -50,6 +50,16 @@ mica data 输出 input_ids/labels；SFT 前缀 labels 为 -100，只对回答计
 | distill/ | train_distillation.py；Mica 教师/学生，不是任意模型适配器 |
 
 常见路线是预训练 → SFT → 可选偏好/RL；LoRA 是微调方式，MoE 是结构选择，不是必经步骤。
+
+预训练只有一个入口。不传 --validation_path 时执行普通预训练；传入验证集后会在每个
+epoch 结束计算精确的 token 加权 loss/perplexity，并保存 --best_weight：
+
+~~~bash
+python pretrain/train_pretrain.py --data_path ../dataset/train.jsonl
+python pretrain/train_pretrain.py \
+  --data_path ../dataset/train.jsonl \
+  --validation_path ../dataset/validation.jsonl
+~~~
 
 从仓库根目录切换到 trainer/，**不要再 cd 到阶段子目录**：
 ```bash
@@ -63,7 +73,7 @@ python dpo/train_dpo.py --help
 默认 ../dataset、../tokenizer、../out、../checkpoints 相对 trainer/ 解析。
 基础预训练从零开始使用 --from_weight none。
 多个阶段的 init_model 默认从 ../out 加载；--from_weight 是前缀，文件名还包含 hidden_size 和 MoE 后缀。
-**--save_dir 不一定控制输入权重或恢复目录**，运行前核对脚本调用。validation/MoE 版本需显式提供训练、验证、指标和恢复路径。
+**--save_dir 不一定控制输入权重或恢复目录**，运行前核对脚本调用。pretrain 可选传入 --validation_path，并在每个 epoch 后记录验证指标、更新 best 权重；MoE 入口需显式提供训练、验证、指标和恢复路径。
 蒸馏须准备匹配的教师与学生配置/权重及兼容词表；RL 还需验证奖励与可选外部 rollout 服务。
 
 CLI 目录不能直接作为阶段脚本的 .pth 输入。反向导入时 mica import-legacy 只接受与配置匹配的原始 state_dict，而非包含 optimizer 的整个恢复对象。
