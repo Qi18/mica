@@ -26,6 +26,17 @@ class LayoutTests(unittest.TestCase):
             (pretrain / "train_pretrain_with_validation.py").exists()
         )
 
+    def test_single_sft_entrypoint(self):
+        sft = ROOT / "trainer" / "sft"
+        self.assertTrue((sft / "train_sft.py").is_file())
+        self.assertTrue((sft / "benchmark_sft_batch.py").is_file())
+        for old_name in (
+            "train_full_sft.py",
+            "train_sft_with_validation.py",
+            "probe_sft_batch.py",
+        ):
+            self.assertFalse((sft / old_name).exists())
+
     def test_no_upstream_or_old_package_imports(self):
         tracked = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True).splitlines()
         self.assertFalse(any(p.startswith(("minimind/", "src/mica_llm/", "recipes/")) for p in tracked))

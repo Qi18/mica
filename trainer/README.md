@@ -4,7 +4,7 @@
 |---|---|
 | tokenizer/ | Tokenizer 训练 |
 | pretrain/ | 统一预训练入口，可选精确 validation |
-| sft/ | 全参 SFT、validation 与 batch 探针 |
+| sft/ | 统一全参/LoRA SFT；可选 validation；独立 GPU batch benchmark |
 | lora/ | LoRA 微调 |
 | dpo/ | 偏好优化 |
 | grpo/ | GRPO |

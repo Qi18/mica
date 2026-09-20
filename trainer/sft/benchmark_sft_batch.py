@@ -1,3 +1,10 @@
+"""Mica SFT 单卡/多卡 batch size 基准测试。
+
+执行真实 forward、backward 和 optimizer step，测量稳定吞吐与显存峰值。
+模型只在内存中临时更新，不保存权重，也不能用于继续训练。多卡时 token 数求和，
+耗时和显存取所有 rank 的最大值。
+"""
+
 import argparse
 import json
 import os
@@ -20,7 +27,8 @@ from trainer.common.utils import init_distributed_mode, init_model, setup_seed
 
 
 def main():
-    parser = argparse.ArgumentParser(description="8-GPU SFT batch-size throughput probe")
+    # 参数与 train_sft.py 保持同名，便于把结果换算成正式训练配置。
+    parser = argparse.ArgumentParser(description="Mica GPU SFT batch-size benchmark")
     parser.add_argument("--data_path", required=True)
     parser.add_argument("--from_weight", default="pretrain")
     parser.add_argument("--batch_size", type=int, required=True)
@@ -33,12 +41,16 @@ def main():
     parser.add_argument("--num_workers", type=int, default=8)
     args = parser.parse_args()
 
+    # 依赖 CUDA 显存统计和同步计时，因此不提供不可比的 CPU 模式。
+    if not torch.cuda.is_available():
+        raise RuntimeError("benchmark_sft_batch.py requires CUDA")
     local_rank = init_distributed_mode()
     rank = dist.get_rank() if dist.is_initialized() else 0
     world_size = dist.get_world_size() if dist.is_initialized() else 1
     device = torch.device(f"cuda:{local_rank}" if torch.cuda.is_available() else "cpu")
     setup_seed(42 + rank)
 
+    # 固定使用全参数 SFT 和 bf16，避免把 LoRA/精度差异混入 batch 对比。
     config = MicaConfig(hidden_size=args.hidden_size, num_hidden_layers=args.num_hidden_layers, use_moe=False)
     model, tokenizer = init_model(config, args.from_weight, device=str(device))
     dataset = SFTDataset(args.data_path, tokenizer, max_length=args.max_seq_len, augment=True)
@@ -60,6 +72,7 @@ def main():
     optimizer.zero_grad(set_to_none=True)
     torch.cuda.reset_peak_memory_stats(device)
 
+    # warmup 也真实更新参数，但不计时；所有更新在进程退出后丢弃。
     total_steps = args.warmup_steps + args.measure_steps
     measured_tokens = 0
     started = None
@@ -82,12 +95,14 @@ def main():
         elif step > args.warmup_steps:
             measured_tokens += labels[..., 1:].ne(-100).sum().item()
 
+    # 数据不足以完成 warmup 时没有有效测量区间，应显式失败。
     if started is None:
         raise RuntimeError("probe loader ended during warmup")
     torch.cuda.synchronize(device)
     elapsed = time.time() - started
     values = torch.tensor([measured_tokens, elapsed, torch.cuda.max_memory_allocated(device) / 1024 ** 2], dtype=torch.float64, device=device)
     if dist.is_initialized():
+        # token 求和；同步训练受最慢 rank 限制，耗时和峰值显存取最大值。
         token_value = values[0].clone()
         dist.all_reduce(token_value, op=dist.ReduceOp.SUM)
         elapsed_value = values[1:].clone()
@@ -100,6 +115,7 @@ def main():
         peak_memory_mib = values[2].item()
 
     if rank == 0:
+        # 单行前缀便于 shell/CI 从普通日志中提取结构化结果。
         result = {
             "status": "passed",
             "per_gpu_batch_size": args.batch_size,

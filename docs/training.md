@@ -40,7 +40,7 @@ mica data 输出 input_ids/labels；SFT 前缀 labels 为 -100，只对回答计
 |---|---|
 | tokenizer/ | train_tokenizer.py；由文件顶部常量控制数据与输出，不提供通用 --help |
 | pretrain/ | train_pretrain.py；验证集可选，启用后保存 best 权重 |
-| sft/ | train_full_sft.py、train_sft_with_validation.py、probe_sft_batch.py |
+| sft/ | train_sft.py；全参数/LoRA 共用，验证集可选；benchmark_sft_batch.py 只测吞吐与显存 |
 | lora/ | train_lora.py；adapter 推理需要匹配的 base |
 | dpo/ | train_dpo.py；偏好数据、策略与参考模型 |
 | grpo/ | train_grpo.py；分组采样与奖励 |
@@ -50,6 +50,11 @@ mica data 输出 input_ids/labels；SFT 前缀 labels 为 -100，只对回答计
 | distill/ | train_distillation.py；Mica 教师/学生，不是任意模型适配器 |
 
 常见路线是预训练 → SFT → 可选偏好/RL；LoRA 是微调方式，MoE 是结构选择，不是必经步骤。
+
+SFT 同样只有一个训练入口：--lora_rank 0 是全参数训练，大于 0 时只训练并导出
+LoRA adapter。不传验证参数就是普通 SFT；可传独立 --validation_data_path，或用
+--validation_size 从训练数据确定性切分。benchmark_sft_batch.py 只用于正式训练前
+选择 batch size，不保存训练权重。
 
 预训练只有一个入口。不传 --validation_path 时执行普通预训练；传入验证集后会在每个
 epoch 结束计算精确的 token 加权 loss/perplexity，并保存 --best_weight：
@@ -65,7 +70,7 @@ python pretrain/train_pretrain.py \
 ```bash
 cd trainer
 python pretrain/train_pretrain.py --help
-python sft/train_full_sft.py --help
+python sft/train_sft.py --help
 python lora/train_lora.py --help
 python dpo/train_dpo.py --help
 ```
