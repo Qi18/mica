@@ -23,29 +23,38 @@ warnings.filterwarnings('ignore')
 
 
 def logits_to_log_probs(logits, labels):
+    # 作用：从模型输出的 logits 中，取出每个位置上"真实标签 token"对应的对数概率
+    # 后续 DPO 需要用这个 log prob 来衡量模型对 chosen/rejected 序列的偏好程度
     # logits shape: (batch_size, seq_len, vocab_size)
     # labels shape: (batch_size, seq_len)
     # log_probs shape: (batch_size, seq_len)
-    log_probs = F.log_softmax(logits, dim=2)
+    log_probs = F.log_softmax(logits, dim=2)  # 在词表维度做 log_softmax，得到每个 token 的对数概率分布
+    # 按 labels 指定的 token 索引，从分布中 gather 出对应概率，squeeze 掉多余维度
     log_probs_per_token = torch.gather(log_probs, dim=2, index=labels.unsqueeze(2)).squeeze(-1)
     return log_probs_per_token
 
 
 def dpo_loss(ref_log_probs, policy_log_probs, mask, beta):
+    # DPO 损失：不需要显式奖励模型，直接用"策略模型 vs 参考模型"的对数概率差来优化偏好
     # ref_log_probs 和 policy_log_probs 都是 shape: (batch_size, seq_len)
+    # 用 mask 只保留回复部分的 token（屏蔽 prompt/padding），再对序列维度求和，得到整条序列的 log prob
     ref_log_probs = (ref_log_probs * mask).sum(dim=1)
     policy_log_probs = (policy_log_probs * mask).sum(dim=1)
 
-    # 将 chosen 和 rejected 数据分开
+    # 一个 batch 里前一半是 chosen（偏好回复），后一半是 rejected（拒绝回复），这里拆开
     batch_size = ref_log_probs.shape[0]
     chosen_ref_log_probs = ref_log_probs[:batch_size // 2]
     reject_ref_log_probs = ref_log_probs[batch_size // 2:]
     chosen_policy_log_probs = policy_log_probs[:batch_size // 2]
     reject_policy_log_probs = policy_log_probs[batch_size // 2:]
 
+    # 策略模型对 chosen 相对 rejected 的偏好程度（对数概率差）
     pi_logratios = chosen_policy_log_probs - reject_policy_log_probs
+    # 参考模型对 chosen 相对 rejected 的偏好程度，作为基准
     ref_logratios = chosen_ref_log_probs - reject_ref_log_probs
+    # 两者相减：策略模型相比参考模型"额外"拉大了多少 chosen 与 rejected 的差距
     logits = pi_logratios - ref_logratios
+    # -logsigmoid(beta * logits)：logits 越大（越偏好 chosen）loss 越小；beta 控制偏离参考模型的强度
     loss = -F.logsigmoid(beta * logits)
     return loss.mean()
 
@@ -56,12 +65,14 @@ def train_epoch(epoch, loader, iters, ref_model, lm_config, start_step=0, wandb=
 
     for step, batch in enumerate(loader, start=start_step + 1):
         last_step = step
+        # DPO 数据成对出现：每条样本同时包含 chosen（偏好）和 rejected（拒绝）两个回复
         x_chosen = batch['x_chosen'].to(args.device)
         x_rejected = batch['x_rejected'].to(args.device)
         y_chosen = batch['y_chosen'].to(args.device)
         y_rejected = batch['y_rejected'].to(args.device)
         mask_chosen = batch['mask_chosen'].to(args.device)
         mask_rejected = batch['mask_rejected'].to(args.device)
+        # 将 chosen 和 rejected 拼接成一个大 batch（前一半 chosen、后一半 rejected），一次前向全部算完
         x = torch.cat([x_chosen, x_rejected], dim=0)
         y = torch.cat([y_chosen, y_rejected], dim=0)
         mask = torch.cat([mask_chosen, mask_rejected], dim=0)
@@ -71,23 +82,27 @@ def train_epoch(epoch, loader, iters, ref_model, lm_config, start_step=0, wandb=
             param_group['lr'] = lr
 
         with autocast_ctx:
+            # 参考模型冻结，不回传梯度，只提供"基准"对数概率
             with torch.no_grad():
                 ref_outputs = ref_model(x)
                 ref_logits = ref_outputs.logits
             ref_log_probs = logits_to_log_probs(ref_logits, y)
             
+            # 策略模型（待训练）的前向，计算其对序列的对数概率
             outputs = model(x)
             logits = outputs.logits
             policy_log_probs = logits_to_log_probs(logits, y)
             
+            # 计算 DPO 损失，再加上 MoE 的辅助负载均衡 loss
             dpo_loss_val = dpo_loss(ref_log_probs, policy_log_probs, mask, beta=beta)
             loss = dpo_loss_val + outputs.aux_loss
-            loss = loss / args.accumulation_steps
+            loss = loss / args.accumulation_steps  # 梯度累积：提前除以累积步数
 
-        scaler.scale(loss).backward()
+        scaler.scale(loss).backward()  # 混合精度：对 loss 缩放后反向传播
 
+        # 每累积满 accumulation_steps 步才真正更新一次参数
         if step % args.accumulation_steps == 0:
-            scaler.unscale_(optimizer)
+            scaler.unscale_(optimizer)  # 先反缩放，才能正确做梯度裁剪
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
             scaler.step(optimizer)
             scaler.update()
@@ -109,9 +124,11 @@ def train_epoch(epoch, loader, iters, ref_model, lm_config, start_step=0, wandb=
             model.eval()
             moe_suffix = '_moe' if lm_config.use_moe else ''
             ckp = f'{args.save_dir}/{args.save_weight}_{lm_config.hidden_size}{moe_suffix}.pth'
+            # 剥掉 DDP / torch.compile 的包装，拿到原始模型才能正确导出权重
             raw_model = model.module if isinstance(model, DistributedDataParallel) else model
             raw_model = getattr(raw_model, '_orig_mod', raw_model)
             state_dict = raw_model.state_dict()
+            # 以 half 精度保存到 CPU，减小权重文件体积
             torch.save({k: v.half().cpu() for k, v in state_dict.items()}, ckp)
             lm_checkpoint(lm_config, weight=args.save_weight, model=model, optimizer=optimizer, scaler=scaler, epoch=epoch, step=step, wandb=wandb, save_dir='../checkpoints')
             model.train()
@@ -120,6 +137,7 @@ def train_epoch(epoch, loader, iters, ref_model, lm_config, start_step=0, wandb=
         del x_chosen, x_rejected, y_chosen, y_rejected, mask_chosen, mask_rejected, x, y, mask
         del ref_outputs, ref_logits, ref_log_probs, outputs, logits, policy_log_probs, loss
 
+    # 收尾处理：若最后不足一个完整累积周期，把剩余梯度再更新一次，避免丢失
     if last_step > start_step and last_step % args.accumulation_steps != 0:
         scaler.unscale_(optimizer)
         torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
